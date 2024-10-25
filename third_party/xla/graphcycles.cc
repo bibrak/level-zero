@@ -61,6 +61,9 @@ namespace {
 using NodeSet = std::unordered_set<int32_t>;
 using OrderedNodeSet = OrderedSet<int32_t>;
 
+constexpr int32_t max_path_len_20 = 20;
+
+
 struct Node {
   int32_t rank;        // rank number assigned by Pearce-Kelly algorithm
   // Note (ecg@): the padding between these two fields bothered me, so I tried
@@ -369,7 +372,7 @@ int GraphCycles::FindPath(int32_t x, int32_t y, int max_path_len,
 
 std::string GraphCycles::Path(int x, int y, const int max_path_len) {
   static const int kPathSize = max_path_len;
-  int32_t path[kPathSize];
+  int32_t path[max_path_len_20];
   int np = FindPath(x, y, kPathSize, path);
   std::string result;
   for (int i = 0; i < np; i++) {
