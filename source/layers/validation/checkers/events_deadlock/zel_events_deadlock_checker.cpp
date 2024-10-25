@@ -35,7 +35,11 @@ eventsDeadlockChecker::~eventsDeadlockChecker() {
     }
 }
 
-ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
+ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogue(
+    ze_event_pool_handle_t hEventPool, ///< [in] handle of the event pool
+    const ze_event_desc_t *desc,       ///< [in] pointer to event descriptor
+    ze_event_handle_t *phEvent         ///< [out] pointer to handle of event object created
+) {
 
     eventToDagID[*phEvent] = invalidDagID;
 
@@ -46,7 +50,6 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyEpilogue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
-
     if (eventToDagID.find(hEvent) != eventToDagID.end()) {
         // Deleted event from eventToDagID but not from the dagIDToAction map as it may be needed for printing the discription of the action when printing path in the DAG.
 
@@ -266,8 +269,8 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendSignalEventPr
     ze_command_list_handle_t hCommandList, ///< [in] handle of the command list
     ze_event_handle_t hEvent               ///< [in] handle of the event
 ) {
-    // TODO: Implememt this
-    // checkForDeadlock("zeCommandListAppendSignalEvent", hEvent, 0, nullptr);
+
+    checkForDeadlock("zeCommandListAppendSignalEvent", hEvent, 0, nullptr);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -288,10 +291,32 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventHostSignalPrologue(
     ze_event_handle_t hEvent ///< [in] handle of the event
 ) {
-    // TODO: Implememt this
-    // checkForDeadlock("zeEventHostSignal", hEvent, 0, nullptr);
+    checkForDeadlock("zeEventHostSignal", hEvent, 0, nullptr);
 
     return ZE_RESULT_SUCCESS;
+}
+
+void eventsDeadlockChecker::ZEeventsDeadlockChecker::resetEventInEventToDagID(
+    const std::string &zeCallDisc, /// action discription
+    const ze_event_handle_t hEvent ///< [in] handle of the event
+) {
+
+    auto it = eventToDagID.find(hEvent);
+    // Check if user is using invalid events, hint if it doesn't exist in eventToDagID.
+    if (it == eventToDagID.end()) {
+        std::cerr << "Warning: hSignalEvent {" << hEvent << "} might be an invalid event in call to " << zeCallDisc << std::endl;
+        return;
+    }
+
+    if (it->second != invalidDagID) {
+
+        auto action = dagIDToAction.find(it->second);
+        if (action != dagIDToAction.end()) {
+            action->second.second = invalidEventAddress; // Reset
+        }
+
+        it->second = invalidDagID; // Reset
+    }
 }
 
 ze_result_t
@@ -299,8 +324,8 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendEventResetPro
     ze_command_list_handle_t hCommandList, ///< [in] handle of the command list
     ze_event_handle_t hEvent               ///< [in] handle of the event
 ) {
-    // TODO: Implememt this
-    // checkForDeadlock("zeCommandListAppendEventReset", hEvent, 0, nullptr);
+
+    resetEventInEventToDagID("zeCommandListAppendEventReset", hEvent);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -309,8 +334,8 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventHostResetPrologue(
     ze_event_handle_t hEvent ///< [in] handle of the event
 ) {
-    // TODO: Implememt this
-    // checkForDeadlock("zeEventHostReset", hEvent, 0, nullptr);
+
+    resetEventInEventToDagID("zeEventHostReset", hEvent);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -412,7 +437,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListUpdateMutableComman
     uint64_t commandId,                    ///< [in] command identifier
     ze_event_handle_t hSignalEvent         ///< [in][optional] handle of the event to signal on completion
 ) {
-    // TODO: Implememt this
+
     checkForDeadlock("zeCommandListUpdateMutableCommandSignalEventExp", hSignalEvent, 0, nullptr);
 
     return ZE_RESULT_SUCCESS;
@@ -492,27 +517,48 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListImmediateAppendComm
     return ZE_RESULT_SUCCESS;
 }
 
-void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
+void eventsDeadlockChecker::ZEeventsDeadlockChecker::validateSignalEventOwnership(const std::string &zeCallDisc,
+                                                                                  const ze_event_handle_t hSignalEvent) {
+    const auto it = eventToDagID.find(hSignalEvent);
+    const auto dagID = it->second;
+    if (it != eventToDagID.end() && dagID != invalidDagID) {
+        std::string previousActionOwner = (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction.find(dagID)->second.first : "UNKNOWN ACTION";
+        std::cerr << "Warning: " << zeCallDisc << " is using the same ze_event_handle_t for signal {" << hSignalEvent << "} which has been previously used by: " << previousActionOwner << std::endl;
+    }
+}
+
+void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(
+    const std::string &zeCallDisc,        /// action discription
+    const ze_event_handle_t hSignalEvent, ///< [in][optional] handle of the event to forming the outgoing edge in the DAG
+    const uint32_t numWaitEvents,         ///< [in][optional] number of events that point to this action.
+    const ze_event_handle_t *phWaitEvents ///< [in][optional][range(0, numWaitEvents)] handle of the events that point to this action.
+) {
     uint32_t this_action_new_node_id = invalidDagID;
 
-    // Check if user is using invalid events, hint if it doesn't exist in eventToDagID.
-    if (eventToDagID.find(hSignalEvent) == eventToDagID.end()) {
-        std::cerr << "Warning: hSignalEvent {" << hSignalEvent << "} might be an invalid event." << std::endl;
-        return;
-    }
-    for (uint32_t i = 0; i < numWaitEvents; i++) {
-        if (eventToDagID.find(phWaitEvents[i]) == eventToDagID.end()) {
-            std::cerr << "Warning: phWaitEvents {" << hSignalEvent << "} might be an invalid event." << std::endl;
+    if (hSignalEvent != nullptr) {
+
+        auto it = eventToDagID.find(hSignalEvent);
+        // Check if user is using invalid events, hint if it doesn't exist in eventToDagID.
+        if (it == eventToDagID.end()) {
+            std::cerr << "Warning: hSignalEvent {" << hSignalEvent << "} might be an invalid event in call to " << zeCallDisc << std::endl;
             return;
         }
-    }
 
-    if (hSignalEvent != nullptr) {
-        auto it = eventToDagID.find(hSignalEvent);
-        if (it != eventToDagID.end() && it->second != invalidDagID) {
+        // A passive check to see if the user is using the same event for multiple actions.
+        // It only print warnings and does not stop the event deadlock checker.
+        validateSignalEventOwnership(zeCallDisc, hSignalEvent);
+
+        if (it->second != invalidDagID) {
             // This event already exists in the DAG. Get the DAG node ID.
             // For example when there is indeed a deadlock it would have already been created.
             this_action_new_node_id = it->second;
+        }
+    }
+
+    for (uint32_t i = 0; i < numWaitEvents; i++) {
+        if (eventToDagID.find(phWaitEvents[i]) == eventToDagID.end()) {
+            std::cerr << "Warning: phWaitEvents {" << hSignalEvent << "} might be an invalid event in call to " << zeCallDisc << std::endl;
+            return;
         }
     }
 

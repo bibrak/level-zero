@@ -14,12 +14,13 @@
 #include "ze_api.h"
 #include "ze_validation_layer.h"
 
-#include <limits> 
+#include <limits>
 #include <string>
 
 namespace validation_layer {
 
 constexpr uint32_t invalidDagID = std::numeric_limits<uint32_t>::max();
+constexpr ze_event_handle_t invalidEventAddress = std::numeric_limits<ze_event_handle_t>::max();
 using actionAndSignalEvent = std::pair<std::string, ze_event_handle_t>;
 
 class __zedlllocal eventsDeadlockChecker : public validationChecker {
@@ -65,8 +66,15 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         // Add edge in the DAG.
         bool addEdgeInDag(uint32_t x, uint32_t y) { return dag.InsertEdge(x, y); }
 
+        // In case the user uses a single hSignalEvent twice or more, which is an ill usage.
+        void validateSignalEventOwnership(const std::string &zeCallDisc, const ze_event_handle_t hSignalEvent);
+
         // Inserts new actions and events in the DAG based on the ze<API CALLS>.
-        void checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents);
+        void checkForDeadlock(const std::string &zeCallDisc, const ze_event_handle_t hSignalEvent, const uint32_t numWaitEvents, const ze_event_handle_t *phWaitEvents);
+
+        // Reset the event to have an invalid DAG ID such that it can be reused.
+        // Useful for zeCalls such as zeCommandListAppendEventReset and zeEventHostReset.
+        void resetEventInEventToDagID(const std::string &zeCallDisc, ze_event_handle_t hEvent);
 
         // The DAG structure.
         xla::GraphCycles dag;
