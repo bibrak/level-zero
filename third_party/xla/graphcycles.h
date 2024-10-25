@@ -46,49 +46,6 @@ limitations under the License.
 // #include <span>
 #include <string>
 
-#define ASSERT_TRUE(condition)                                                                                               \
-  do                                                                                                                         \
-  {                                                                                                                          \
-    if (!(condition))                                                                                                        \
-    {                                                                                                                        \
-      std::cerr << "Assertion failed: (" #condition ") is false in file " << __FILE__ << ", line " << __LINE__ << std::endl; \
-      std::exit(EXIT_FAILURE);                                                                                               \
-    }                                                                                                                        \
-  }
-
-#define CHECK_EQ(val1, val2)                                                                                                     \
-  do                                                                                                                             \
-  {                                                                                                                              \
-    if ((val1) != (val2))                                                                                                        \
-    {                                                                                                                            \
-      std::cerr << "Check failed: (" #val1 " == " #val2 ") is false in file " << __FILE__ << ", line " << __LINE__ << std::endl; \
-      std::cerr << "  Actual: " << (val1) << " vs " << (val2) << std::endl;                                                      \
-      std::exit(EXIT_FAILURE);                                                                                                   \
-    }                                                                                                                            \
-  } while (0)
-
-#define CHECK(condition)                                                                                                 \
-  do                                                                                                                     \
-  {                                                                                                                      \
-    if (!(condition))                                                                                                    \
-    {                                                                                                                    \
-      std::cerr << "Check failed: (" #condition ") is false in file " << __FILE__ << ", line " << __LINE__ << std::endl; \
-      std::exit(EXIT_FAILURE);                                                                                           \
-    }                                                                                                                    \
-  } while (0)
-
-#define DCHECK(condition) CHECK(condition)
-
-#define EXPECT_TRUE(condition)                                                                                                 \
-  do                                                                                                                           \
-  {                                                                                                                            \
-    if (!(condition))                                                                                                          \
-    {                                                                                                                          \
-      std::cerr << "Expectation failed: (" #condition ") is false in file " << __FILE__ << ", line " << __LINE__ << std::endl; \
-    }                                                                                                                          \
-  } while (0)
-
-
 namespace xla {
 
 // NOTE!!!

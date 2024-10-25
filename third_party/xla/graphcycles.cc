@@ -46,6 +46,7 @@ limitations under the License.
 #include "ordered_set.h"
 #include <unordered_set>
 #include <iostream>
+
 //#include "tsl/platform/logging.h"
 
 namespace xla {
@@ -404,7 +405,7 @@ bool GraphCycles::IsReachableNonConst(int32_t x, int32_t y) {
 }
 
 bool GraphCycles::CanContractEdge(int32_t a, int32_t b) {
-  CHECK(HasEdge(a, b));// << "No edge exists from " << a << " to " << b;
+  assert(HasEdge(a, b) && "No edge exists from a to b");
   RemoveEdge(a, b);
   bool reachable = IsReachableNonConst(a, b);
   // Restore the graph to its original state.
@@ -414,7 +415,7 @@ bool GraphCycles::CanContractEdge(int32_t a, int32_t b) {
 }
 
 int32_t GraphCycles::ContractEdge(int32_t a, int32_t b, bool &success) {
-  CHECK(HasEdge(a, b));
+  assert(HasEdge(a, b) && "No edge exists from a to b");
   RemoveEdge(a, b);
 
   if (IsReachableNonConst(a, b)) {
@@ -476,7 +477,7 @@ namespace {
 void SortInPostOrder(const std::vector<Node>& nodes,
        std::vector<int32_t>* to_sort) {
   std::sort(to_sort->begin(), to_sort->end(), [&](int32_t a, int32_t b) {
-  DCHECK(a == b || nodes[a].rank != nodes[b].rank);
+  assert(a == b || nodes[a].rank != nodes[b].rank);
   return nodes[a].rank > nodes[b].rank;
   });
 }

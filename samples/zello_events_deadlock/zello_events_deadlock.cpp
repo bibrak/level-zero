@@ -40,7 +40,7 @@ template <bool TerminateOnFailure, typename ResulT>
 inline void validate(ResulT result, const char *message) {
     if (result != 0) { /* assumption 0 is success */
         std::cerr << (TerminateOnFailure ? "ERROR : " : "WARNING : ") << message
-                  << " : " << result << std::endl;
+                  << " : " << to_string(result) << std::endl;
         if (TerminateOnFailure) {
             std::terminate();
         }
@@ -178,7 +178,8 @@ int main(int argc, char *argv[]) {
     ze_event_handle_t start_event;
     SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &start_event)); */
 
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
 
     ze_host_mem_alloc_desc_t host_desc = {};
     host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
@@ -198,20 +199,24 @@ int main(int argc, char *argv[]) {
     void *device_mem_ptr = nullptr;
     SUCCESS_OR_TERMINATE(zeMemAllocDevice(context, &device_desc, buffer_size, 0, pDevice, &device_mem_ptr));
 
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
 
     // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
     // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
-    std::cout << std::endl << std::endl;
-    
+    std::cout << std::endl
+              << std::endl;
+
     // Action_1: Host to Device, is dependent on Action_0
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
 
     std::cout << "\n\n\n";
 

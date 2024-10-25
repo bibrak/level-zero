@@ -19,6 +19,7 @@ limitations under the License.
 #include <vector>
 #include <iostream>
 #include <unordered_map>
+#include <cassert>
 
 // #include "absl/container/flat_hash_map.h"
 // #include "absl/types/span.h" 
@@ -50,7 +51,7 @@ class OrderedSet {
   // set.
   void Erase(T value) {
     auto it = value_to_index_.find(value);
-    CHECK(it != value_to_index_.end());
+    assert(it != value_to_index_.end());
 
     // Since we don't want to move values around in `value_sequence_` we swap
     // the value in the last position and with value to be deleted and then
