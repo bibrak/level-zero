@@ -172,11 +172,11 @@ int main(int argc, char *argv[]) {
     ev_desc.index++;
     SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &event[2]));
 
-    ev_desc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
+    /* ev_desc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
     ev_desc.wait = ZE_EVENT_SCOPE_FLAG_DEVICE;
     ev_desc.index++;
     ze_event_handle_t start_event;
-    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &start_event));
+    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &start_event)); */
 
     ze_host_mem_alloc_desc_t host_desc = {};
     host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
@@ -193,20 +193,25 @@ int main(int argc, char *argv[]) {
     device_desc.ordinal = 0;
     device_desc.flags = 0;
 
+
     void *device_mem_ptr = nullptr;
     SUCCESS_OR_TERMINATE(zeMemAllocDevice(context, &device_desc, buffer_size, 0, pDevice, &device_mem_ptr));
 
+    std::cout << "\n\n\n";
+
     // Action_0: Host to Device
-    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[0] */, 0 /* 1 */, nullptr /* &start_event */));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
 
     // Action_1: Host to Device, is dependent on Action_0
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
 
     // Action_2: Host to Device, is dependent on Action_1
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
 
     // Create the event deadlock by having event[2] dependent on Action_0
     // TODO!!! It will be created when creating Action_0 and specifying event[2] as the dependent event
+
+    std::cout << "\n\n\n";
 
     SUCCESS_OR_TERMINATE(zeCommandListClose(command_list));
 
@@ -220,7 +225,8 @@ int main(int argc, char *argv[]) {
     ze_command_queue_handle_t command_queue{};
     SUCCESS_OR_TERMINATE(zeCommandQueueCreate(context, pDevice, &command_queue_description, &command_queue));
 
-    SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
+    // This segfaults. TODO!!! Fix
+    // SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
 
     SUCCESS_OR_TERMINATE(zeCommandQueueSynchronize(command_queue, UINT64_MAX));
 
@@ -235,19 +241,20 @@ int main(int argc, char *argv[]) {
 
     SUCCESS_OR_TERMINATE(zeCommandQueueDestroy(command_queue));
 
-    SUCCESS_OR_TERMINATE(zeMemFree(context, host_mem_ptr));
-    SUCCESS_OR_TERMINATE(zeMemFree(context, device_mem_ptr));
+    // These two hang. TODO!!! Fix
+    /* SUCCESS_OR_TERMINATE(zeMemFree(context, host_mem_ptr));
+    SUCCESS_OR_TERMINATE(zeMemFree(context, device_mem_ptr)); */
 
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[0]));
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[1]));
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[2]));
-    SUCCESS_OR_TERMINATE(zeEventDestroy(start_event));
+    // SUCCESS_OR_TERMINATE(zeEventDestroy(start_event));
 
-    SUCCESS_OR_TERMINATE(zeEventPoolDestroy(event_pool));
-
+    // These these hang. TODO!!! Fix
+    /* SUCCESS_OR_TERMINATE(zeEventPoolDestroy(event_pool));
     SUCCESS_OR_TERMINATE(zeCommandListDestroy(command_list));
 
-    SUCCESS_OR_TERMINATE(zeContextDestroy(context));
+    SUCCESS_OR_TERMINATE(zeContextDestroy(context));*/
 
     if (tracing_runtime_enabled) {
         std::cout << "Disable Tracing Layer after init" << std::endl;
@@ -257,6 +264,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-
+    std::cout << "Returning with 0 looks like it hangs here ... ???" << std::endl;
     return 0;
 }

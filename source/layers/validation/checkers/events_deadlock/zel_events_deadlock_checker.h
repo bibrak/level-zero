@@ -15,9 +15,11 @@
 
 #include <string>
 
-constexpr int invalidDagID = -1;
-
 namespace validation_layer {
+
+constexpr int invalidDagID = -1;
+using actionAndSignalEvent = std::pair<std::string, ze_event_handle_t>;
+
 class __zedlllocal eventsDeadlockChecker : public validationChecker {
   public:
     eventsDeadlockChecker();
@@ -38,8 +40,13 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         ze_result_t zeCommandListAppendMemoryCopyEpilogue(ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr, size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
 
       private:
+        // events point from/out to a DAG node. This map stores the DAG ID for each event (if there is one).
         std::unordered_map<ze_event_handle_t, int> eventToDagID;
-        std::unordered_map<std::string, int> actionToDagID;
+        
+        std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
+
+        // temporary solution to assign unique ID to each DAG. Eventually, this will come from the DAG object that manages the topological sort.
+        int nextDagID = 0;
     };
     // class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     // class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};
