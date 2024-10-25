@@ -368,7 +368,7 @@ TEST(
     // Explicitly break the dependency by signaling the last event.
     status = zeEventHostSignal(event[2]);
     std::cerr.rdbuf(old_buf);
-    std::cout << "capture.str() = " << capture.str() << std::endl;
+
     found = capture.str().find("Warning: zeEventHostSignal is using the same ze_event_handle_t");
     EXPECT_NE(found, std::string::npos);
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
