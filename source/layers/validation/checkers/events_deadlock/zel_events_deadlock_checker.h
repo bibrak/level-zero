@@ -15,6 +15,8 @@
 
 #include <string>
 
+constexpr int invalidDagID = -1;
+
 namespace validation_layer {
 class __zedlllocal eventsDeadlockChecker : public validationChecker {
   public:
@@ -34,9 +36,14 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         ze_result_t zeCommandListAppendLaunchCooperativeKernelEpilogue(ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t *pLaunchFuncArgs, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
         ze_result_t zeCommandListAppendMemoryCopyPrologue(ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr, size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
         ze_result_t zeCommandListAppendMemoryCopyEpilogue(ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr, size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+
+      private:
+        std::unordered_map<ze_event_handle_t, int> eventToDagID;
+        std::unordered_map<std::string, int> actionToDagID;
     };
     // class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     // class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};
+
     bool enableEventsDeadlock = false;
 };
 extern class eventsDeadlockChecker eventsDeadlock_checker;

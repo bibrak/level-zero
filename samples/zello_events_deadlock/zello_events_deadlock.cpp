@@ -36,6 +36,24 @@ void print_loader_versions() {
 #define putenv_safe putenv
 #endif
 
+template <bool TerminateOnFailure, typename ResulT>
+inline void validate(ResulT result, const char *message) {
+    if (result != 0) { /* assumption 0 is success */
+        std::cerr << (TerminateOnFailure ? "ERROR : " : "WARNING : ") << message
+                  << " : " << result << std::endl;
+        if (TerminateOnFailure) {
+            std::terminate();
+        }
+        return;
+    }
+    constexpr bool verbose = true;
+    if (verbose) {
+        std::cerr << " SUCCESS : " << message << std::endl;
+    }
+}
+
+#define SUCCESS_OR_TERMINATE(CALL) validate<true>(CALL, #CALL)
+
 //////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
     bool tracing_runtime_enabled = false;
@@ -125,14 +143,11 @@ int main(int argc, char *argv[]) {
     // Create an event to be signaled by the device
     ze_event_pool_desc_t ep_desc = {};
     ep_desc.stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC;
-    ep_desc.count = 1;
+    ep_desc.count = 4;
     ep_desc.flags = ZE_EVENT_POOL_FLAG_HOST_VISIBLE;
-    ze_event_desc_t ev_desc = {};
-    ev_desc.stype = ZE_STRUCTURE_TYPE_EVENT_DESC;
-    ev_desc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
-    ev_desc.wait = ZE_EVENT_SCOPE_FLAG_HOST;
 
     ze_event_pool_handle_t event_pool;
+
     status = zeEventPoolCreate(context, &ep_desc, 1, &pDevice, &event_pool);
     if (status != ZE_RESULT_SUCCESS) {
         std::cout << "zeEventPoolCreate Failed with return code: " << to_string(status) << std::endl;
@@ -140,22 +155,99 @@ int main(int argc, char *argv[]) {
     }
 
     std::vector<ze_event_handle_t> event{};
-    // ze_event_handle_t event;
-    status = zeEventCreate(event_pool, &ev_desc, &event[0]);
-    if (status != ZE_RESULT_SUCCESS) {
-        std::cout << "zeEventCreate Failed with return code: " << to_string(status) << std::endl;
-        exit(1);
-    }
+    // Two events for memcpy that will form a dependency on a 3rd event
+    event.resize(3);
+
+    ze_event_desc_t ev_desc = {};
+    ev_desc.stype = ZE_STRUCTURE_TYPE_EVENT_DESC;
+    ev_desc.signal = ZE_EVENT_SCOPE_FLAG_DEVICE; // ZE_EVENT_SCOPE_FLAG_HOST ??
+    ev_desc.wait = ZE_EVENT_SCOPE_FLAG_HOST;
+
+    ev_desc.index = 0;
+    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &event[0]));
+
+    ev_desc.index++;
+    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &event[1]));
+
+    ev_desc.index++;
+    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &event[2]));
+
+    ev_desc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
+    ev_desc.wait = ZE_EVENT_SCOPE_FLAG_DEVICE;
+    ev_desc.index++;
+    ze_event_handle_t start_event;
+    SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &start_event));
+
+    ze_host_mem_alloc_desc_t host_desc = {};
+    host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+    host_desc.pNext = nullptr;
+    host_desc.flags = 0;
+
+    size_t buffer_size = 1024;
+    void *host_mem_ptr = nullptr;
+    SUCCESS_OR_TERMINATE(zeMemAllocHost(context, &host_desc, buffer_size, 1, &host_mem_ptr));
+
+    ze_device_mem_alloc_desc_t device_desc = {};
+    device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+    device_desc.pNext = nullptr;
+    device_desc.ordinal = 0;
+    device_desc.flags = 0;
+
+    void *device_mem_ptr = nullptr;
+    SUCCESS_OR_TERMINATE(zeMemAllocDevice(context, &device_desc, buffer_size, 0, pDevice, &device_mem_ptr));
+
+    // Action_0: Host to Device
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[0] */, 0 /* 1 */, nullptr /* &start_event */));
+
+    // Action_1: Host to Device, is dependent on Action_0
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
+
+    // Action_2: Host to Device, is dependent on Action_1
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
+
+    // Create the event deadlock by having event[2] dependent on Action_0
+    // TODO!!! It will be created when creating Action_0 and specifying event[2] as the dependent event
+
+    SUCCESS_OR_TERMINATE(zeCommandListClose(command_list));
+
+    ze_command_queue_desc_t command_queue_description{};
+    command_queue_description.stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC;
+    command_queue_description.pNext = nullptr;
+    command_queue_description.ordinal = 0;
+    command_queue_description.index = 0;
+    command_queue_description.mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS;
+
+    ze_command_queue_handle_t command_queue{};
+    SUCCESS_OR_TERMINATE(zeCommandQueueCreate(context, pDevice, &command_queue_description, &command_queue));
+
+    SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
+
+    SUCCESS_OR_TERMINATE(zeCommandQueueSynchronize(command_queue, UINT64_MAX));
+
+    // SUCCESS_OR_TERMINATE(zeEventHostSignal(start_event));
 
     // signal the event from the device and wait for completion
-    zeCommandListAppendSignalEvent(command_list, event[0]);
-    zeEventHostSynchronize(event[0], UINT64_MAX);
+
+    // zeCommandListAppendSignalEvent(command_list, event[0]);
+    // zeEventHostSynchronize(event[0], UINT64_MAX);
+
     std::cout << "Congratulations, the device completed execution!\n";
 
-    zeContextDestroy(context);
-    zeCommandListDestroy(command_list);
-    zeEventDestroy(event[0]);
-    zeEventPoolDestroy(event_pool);
+    SUCCESS_OR_TERMINATE(zeCommandQueueDestroy(command_queue));
+
+    SUCCESS_OR_TERMINATE(zeMemFree(context, host_mem_ptr));
+    SUCCESS_OR_TERMINATE(zeMemFree(context, device_mem_ptr));
+
+    SUCCESS_OR_TERMINATE(zeEventDestroy(event[0]));
+    SUCCESS_OR_TERMINATE(zeEventDestroy(event[1]));
+    SUCCESS_OR_TERMINATE(zeEventDestroy(event[2]));
+    SUCCESS_OR_TERMINATE(zeEventDestroy(start_event));
+
+    SUCCESS_OR_TERMINATE(zeEventPoolDestroy(event_pool));
+
+    SUCCESS_OR_TERMINATE(zeCommandListDestroy(command_list));
+
+    SUCCESS_OR_TERMINATE(zeContextDestroy(context));
 
     if (tracing_runtime_enabled) {
         std::cout << "Disable Tracing Layer after init" << std::endl;
