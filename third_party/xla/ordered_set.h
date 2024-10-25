@@ -45,7 +45,7 @@ class OrderedSet {
   // present in the set before the insertion.
   bool Insert(T value) {
     bool new_insertion =
-        value_to_index_.insert({value, value_sequence_.size()}).second;
+      value_to_index_.insert({value, static_cast<int32_t>(value_sequence_.size())}).second;
     if (new_insertion) {
       value_sequence_.push_back(value);
     }
