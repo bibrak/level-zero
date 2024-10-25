@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     // Create an event to be signaled by the device
     ze_event_pool_desc_t ep_desc = {};
     ep_desc.stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC;
-    ep_desc.count = 4;
+    ep_desc.count = 3;
     ep_desc.flags = ZE_EVENT_POOL_FLAG_HOST_VISIBLE;
 
     ze_event_pool_handle_t event_pool;

@@ -182,15 +182,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
                 // For example when there is indeed a deadlock it would have already been created.
                 this_action_new_node_id = eventToDagID[hSignalEvent];
                 std::cout << "\tFound event in eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
-            }/*  else {
-                // Create node in DAG
-                this_action_new_node_id = nextDagID;
-                nextDagID++;
-
-                // Now we know where the hSignalEvent points from/out in the DAG. Update the eventtoDagID map.
-                eventToDagID[hSignalEvent] = this_action_new_node_id;
-                std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
-            } */
+            }
         }
     }
 
