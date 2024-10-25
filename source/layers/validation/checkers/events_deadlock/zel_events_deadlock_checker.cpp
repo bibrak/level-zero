@@ -448,7 +448,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListUpdateMutableComman
     ze_event_handle_t hSignalEvent         ///< [in][optional] handle of the event to signal on completion
 ) {
     // TODO: Implememt this
-    // checkForDeadlock("zeCommandListUpdateMutableCommandSignalEventExp", hSignalEvent, 0, nullptr);
+    checkForDeadlock("zeCommandListUpdateMutableCommandSignalEventExp", hSignalEvent, 0, nullptr);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -530,6 +530,16 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListImmediateAppendComm
 void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
     int this_action_new_node_id = invalidDagID;
 
+    // Check if user is using invalid events, hint if it doesn't exist in eventToDagID
+    if (eventToDagID.find(hSignalEvent) == eventToDagID.end()) {
+        std::cerr << "Warning: Wait event " << hSignalEvent << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+    }
+    for (uint32_t i = 0; i < numWaitEvents; i++) {
+        if (eventToDagID.find(phWaitEvents[i]) == eventToDagID.end()) {
+            std::cerr << "Warning: Wait event " << phWaitEvents[i] << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+        }
+    }
+
     if (hSignalEvent != nullptr) {
         auto it = eventToDagID.find(hSignalEvent);
         if (it != eventToDagID.end() && it->second != invalidDagID) {
@@ -592,15 +602,15 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
                 // std::cerr << "\t\tThere is already a path from " << this_action_new_node_id << " to " << dagID << ": " << dag.Path(this_action_new_node_id, dagID, 5) << std::endl;
                 auto path = dag.PathDagIDs(this_action_new_node_id, dagID, 5);
 
-                std::string dependencyPrefix = "|\n\t-> ";
-                std::cerr << "There is already a path from:\n";
+                std::string spacePrefix = "";
+                std::cerr << "Warning: There may be a potential event deadlock! There is already a path from:\n";
                 auto dagIDsInPath = path.first;
                 std::cerr << getActionDetails(dagIDsInPath[0]) << "\n";
                 for (uint32_t i = 1; i < dagIDsInPath.size(); i++) {
-                    std::cerr << dependencyPrefix << getActionDetails(dagIDsInPath[i]) << "\n";
+                    std::cerr << spacePrefix << "|\n"
+                              << spacePrefix << "-> " << getActionDetails(dagIDsInPath[i]) << "\n";
+                    spacePrefix += "   ";
                 }
-
-                std::cerr << "\tWarning: There may be a potential event deadlock!" << std::endl;
             }
         } else {
             std::cerr << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue: Error: Wait event not found in eventToDagID map" << std::endl;

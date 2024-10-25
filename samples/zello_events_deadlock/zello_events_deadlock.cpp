@@ -130,13 +130,14 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // Create an immediate command list for direct submission
-    ze_command_queue_desc_t altdesc = {};
-    altdesc.stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC;
+    // Create an  command list for direct submission
+    ze_command_list_desc_t altdesc = {};
+    altdesc.stype = ZE_STRUCTURE_TYPE_COMMAND_LIST_DESC;
+
     ze_command_list_handle_t command_list = {};
-    status = zeCommandListCreateImmediate(context, pDevice, &altdesc, &command_list);
+    status = zeCommandListCreate(context, pDevice, &altdesc, &command_list);
     if (status != ZE_RESULT_SUCCESS) {
-        std::cout << "zeCommandListCreateImmediate Failed with return code: " << to_string(status) << std::endl;
+        std::cout << "zeCommandListCreate Failed with return code: " << to_string(status) << std::endl;
         exit(1);
     }
 
@@ -155,7 +156,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::vector<ze_event_handle_t> event{};
-    // Two events for memcpy that will form a dependency on a 3rd event
+    // Three events for memcpy that will form a circular dependency.
     event.resize(3);
 
     ze_event_desc_t ev_desc = {};
@@ -178,9 +179,6 @@ int main(int argc, char *argv[]) {
     ze_event_handle_t start_event;
     SUCCESS_OR_TERMINATE(zeEventCreate(event_pool, &ev_desc, &start_event)); */
 
-    std::cout << std::endl
-              << std::endl;
-
     ze_host_mem_alloc_desc_t host_desc = {};
     host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
     host_desc.pNext = nullptr;
@@ -193,7 +191,7 @@ int main(int argc, char *argv[]) {
     ze_device_mem_alloc_desc_t device_desc = {};
     device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
     device_desc.pNext = nullptr;
-    device_desc.ordinal = 0;
+    // device_desc.ordinal = 0;
     device_desc.flags = 0;
 
     void *device_mem_ptr = nullptr;
@@ -203,20 +201,21 @@ int main(int argc, char *argv[]) {
               << std::endl;
 
     // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
-    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
-    std::cout << std::endl
-              << std::endl;
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
+    /* std::cout << std::endl
+              << std::endl; */
 
     // Action_1: Host to Device, is dependent on Action_0
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
-    std::cout << std::endl
-              << std::endl;
+    /* std::cout << std::endl
+              << std::endl; */
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
-    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
-    std::cout << std::endl
-              << std::endl;
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
+     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
+    /* std::cout << std::endl
+              << std::endl; */
 
     std::cout << "\n\n\n";
 
@@ -225,43 +224,38 @@ int main(int argc, char *argv[]) {
     ze_command_queue_desc_t command_queue_description{};
     command_queue_description.stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC;
     command_queue_description.pNext = nullptr;
-    command_queue_description.ordinal = 0;
-    command_queue_description.index = 0;
+    // command_queue_description.ordinal = 0;
+    // command_queue_description.index = 0;
     command_queue_description.mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS;
 
     ze_command_queue_handle_t command_queue{};
     SUCCESS_OR_TERMINATE(zeCommandQueueCreate(context, pDevice, &command_queue_description, &command_queue));
 
-    // This segfaults. TODO!!! Fix
+    // Explicitly break the dependency by signaling the last event.
+    // zeEventHostSignal(event[2]);
+
     SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
 
     SUCCESS_OR_TERMINATE(zeCommandQueueSynchronize(command_queue, UINT64_MAX));
 
     // SUCCESS_OR_TERMINATE(zeEventHostSignal(start_event));
 
-    // signal the event from the device and wait for completion
-
-    // zeCommandListAppendSignalEvent(command_list, event[0]);
-    // zeEventHostSynchronize(event[0], UINT64_MAX);
-
     std::cout << "Congratulations, the device completed execution!\n";
 
     SUCCESS_OR_TERMINATE(zeCommandQueueDestroy(command_queue));
 
-    // These two hang. TODO!!! Fix
-    /* SUCCESS_OR_TERMINATE(zeMemFree(context, host_mem_ptr));
-    SUCCESS_OR_TERMINATE(zeMemFree(context, device_mem_ptr)); */
+    SUCCESS_OR_TERMINATE(zeMemFree(context, host_mem_ptr));
+    SUCCESS_OR_TERMINATE(zeMemFree(context, device_mem_ptr));
 
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[0]));
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[1]));
     SUCCESS_OR_TERMINATE(zeEventDestroy(event[2]));
     // SUCCESS_OR_TERMINATE(zeEventDestroy(start_event));
 
-    // These these hang. TODO!!! Fix
-    /* SUCCESS_OR_TERMINATE(zeEventPoolDestroy(event_pool));
+    SUCCESS_OR_TERMINATE(zeEventPoolDestroy(event_pool));
     SUCCESS_OR_TERMINATE(zeCommandListDestroy(command_list));
 
-    SUCCESS_OR_TERMINATE(zeContextDestroy(context));*/
+    SUCCESS_OR_TERMINATE(zeContextDestroy(context));
 
     if (tracing_runtime_enabled) {
         std::cout << "Disable Tracing Layer after init" << std::endl;
@@ -271,6 +265,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-    std::cout << "Returning with 0 looks like it hangs here ... ???" << std::endl;
+
     return 0;
 }
