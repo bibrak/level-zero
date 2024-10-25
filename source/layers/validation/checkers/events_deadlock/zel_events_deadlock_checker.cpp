@@ -199,11 +199,15 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
 
     // Add this action to the actionToDagID map
     std::ostringstream oss;
-    oss << "MemoryCopy: hSignalEvent: " << hSignalEvent << ", phWaitEvents: ";
+    oss << "MemoryCopy: hSignalEvent{" << hSignalEvent << "}, phWaitEvents{";
 
     for (uint32_t i = 0; i < numWaitEvents; i++) {
-        oss << phWaitEvents[i] << ", ";
+        oss << phWaitEvents[i];
+        if (i < numWaitEvents - 1) {
+            oss << ", ";
+        }
     }
+    oss << "}";
 
     std::string action = oss.str(); // Convert the stream to a string
     dagIDToAction[this_action_new_node_id] = actionAndSignalEvent(action, hSignalEvent);
@@ -222,10 +226,11 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
             std::cout << "\tDAG: Trying to add edge from " << dagID << " to " << this_action_new_node_id << std::endl;
             std::string fromAction = (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction[dagID].first : "PLACEHOLDER";
             std::string toAction = (dagIDToAction.find(this_action_new_node_id) != dagIDToAction.end()) ? dagIDToAction[this_action_new_node_id].first : "PLACEHOLDER";
-            std::cout << "\t\tAction: " << fromAction << " --> " << toAction << std::endl;
+            std::cout << "\t\tAction[" << fromAction << "] --> " << "Action[" << toAction << "]" << std::endl;
 
             if (!addEdgeInDag(dagID, this_action_new_node_id)) {
                 std::cerr << "\tError adding edge from " << dagID << " to " << this_action_new_node_id << " in DAG!!!!!!" << std::endl;
+                std::cerr << "\t\tThere is already a path from " << this_action_new_node_id << " to " << dagID << ": " << Path(this_action_new_node_id, dagID) << std::endl;
                 std::cerr << "\tEvent Deadlock detected! Terminating!" << std::endl;
                 std::terminate();
             }

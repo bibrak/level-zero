@@ -44,10 +44,8 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         // events point from/out to a DAG node. This map stores the DAG ID for each event (if there is one).
         std::unordered_map<ze_event_handle_t, int> eventToDagID;
 
+        // This map acts as a bi-directional map to eventToDagID. It maps DAG ID to a pair containing action description and signal event.
         std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
-
-        // temporary solution to assign unique ID to each DAG. Eventually, this will come from the DAG object that manages the topological sort.
-        // int nextDagID = 0;
 
         int addNodeInDag() { return g_.NewNode(); }
         bool addEdgeInDag(int x, int y) { return g_.InsertEdge(x, y); }
@@ -71,6 +69,7 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
             return result;
         }
 
+        // The DAG structure.
         xla::GraphCycles g_;
     };
     class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
