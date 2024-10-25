@@ -18,6 +18,7 @@ By default, no validation modes will be enabled. The individual validation modes
 
 - `ZE_ENABLE_PARAMETER_VALIDATION`
 - `ZE_ENABLE_HANDLE_LIFETIME`
+- `ZEL_ENABLE_EVENTSDEADLOCK_CHECKER`
 - `ZE_ENABLE_MEMORY_TRACKER` (Not yet Implemeneted)
 - `ZE_ENABLE_THREADING_VALIDATION` (Not yet Implemeneted)
 
@@ -48,6 +49,9 @@ This mode maintains an internal mapping of each handle type to a state structure
 - Additional per handle state checks added as needed
     - Example - Check ze_cmdlist_handle_t open or closed
 
+### `ZEL_ENABLE_EVENTSDEADLOCK_CHECKER`
+
+The Events Deadlock Checker is designed to detect potential deadlocks that might occur due to improper event usage in the Level Zero API. It prints out wairning messages for user when it detects a potential deadlock.
 
 ### `ZE_ENABLE_THREADING_VALIDATION` (Not yet Implemeneted)
 
