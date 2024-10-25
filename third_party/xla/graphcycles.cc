@@ -142,7 +142,7 @@ int32_t GraphCycles::NewNode() {
   if (rep_->free_nodes_.empty()) {
     Node n;
     n.visited = false;
-    n.rank = rep_->nodes_.size();
+    n.rank = static_cast<int32_t>(rep_->nodes_.size());
     rep_->nodes_.emplace_back(n);
     rep_->node_io_.emplace_back();
     rep_->node_data_.push_back(nullptr);
@@ -522,8 +522,9 @@ std::vector<int32_t> GraphCycles::AllNodesInPostOrder() const {
   all_nodes.reserve(rep_->nodes_.size() - free_nodes_set.size());
 
   for (int64_t i = 0, e = rep_->nodes_.size(); i < e; i++) {
-    if (!contains(free_nodes_set, i)) {
-      all_nodes.push_back(i);
+    int32_t index = static_cast<int32_t>(i);
+    if (!contains(free_nodes_set, index)) {
+      all_nodes.push_back(index);
     }
   }
 
