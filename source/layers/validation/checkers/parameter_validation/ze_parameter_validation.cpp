@@ -12,6 +12,8 @@
 #include "ze_validation_layer.h"
 #include "param_validation.h"
 
+#include <iostream>
+
 namespace validation_layer
 {
     class parameterValidationChecker parameterChecker;
@@ -43,6 +45,7 @@ namespace validation_layer
                                                         ///< must be 0 (default) or a combination of ::ze_init_flag_t.
         )
     {
+        std::cout << "ZEParameterValidation: zeInitPrologue" << std::endl;
         if( 0x3 < flags )
             return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
