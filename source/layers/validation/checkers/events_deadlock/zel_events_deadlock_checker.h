@@ -41,17 +41,23 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         ze_result_t zeCommandListAppendMemoryCopyEpilogue(ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr, size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
 
       private:
+        // Add node in the DAG and get its ID.
+        int addNodeInDag() { return dag.NewNode(); }
+
+        // Add edge in the DAG.
+        bool addEdgeInDag(int x, int y) { return dag.InsertEdge(x, y); }
+
+        // Inserts new actions and events in the DAG based on the ze<API CALLS>.
+        void checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents);
+
         // The DAG structure.
         xla::GraphCycles dag;
-        
+
         // events point from/out to a DAG node. This map stores the DAG ID for each event (if there is one).
         std::unordered_map<ze_event_handle_t, int> eventToDagID;
 
         // This map acts as a bi-directional map to eventToDagID. It maps DAG ID to a pair containing action description and signal event.
         std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
-
-        int addNodeInDag() { return dag.NewNode(); }
-        bool addEdgeInDag(int x, int y) { return dag.InsertEdge(x, y); }
     };
     class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};

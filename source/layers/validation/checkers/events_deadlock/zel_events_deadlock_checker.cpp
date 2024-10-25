@@ -15,7 +15,7 @@ namespace validation_layer {
 class eventsDeadlockChecker eventsDeadlock_checker;
 
 eventsDeadlockChecker::eventsDeadlockChecker() {
-    std::cout << "eventsDeadlockChecker() called!\n";
+    
     enableEventsDeadlock = getenv_tobool("ZEL_ENABLE_EVENTSDEADLOCK_CHECKER");
     if (enableEventsDeadlock) {
         eventsDeadlockChecker::ZEeventsDeadlockChecker *zeChecker = new eventsDeadlockChecker::ZEeventsDeadlockChecker;
@@ -38,22 +38,15 @@ eventsDeadlockChecker::~eventsDeadlockChecker() {
 ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeInitPrologue(
     ze_init_flags_t flags) {
-    // std::cout << "eventsDeadlockChecker: zeInitPrologue" << std::endl;
+
     return ZE_RESULT_SUCCESS;
 }
 
 ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreatePrologue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
-    /* std::cout << "eventsDeadlockChecker: zeEventCreatePrologue" << std::endl;
-
-    // printf("\tphEvent pointer address: %p\n", phEvent);
-    printf("\t*phEvent pointer address: %p\n", *phEvent); */
 
     return ZE_RESULT_SUCCESS;
 }
 ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
-
-    std::cout << "eventsDeadlockChecker: zeEventCreateEpilogue" << std::endl;
-    std::cout << "\t*phEvent pointer address: " << *phEvent << std::endl;
 
     eventToDagID[*phEvent] = invalidDagID;
 
@@ -64,8 +57,6 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyPrologue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
-    /* std::cout << "eventsDeadlockChecker: zeEventDestroyPrologue" << std::endl;
-    std::cout << "\thEvent pointer address: " << hEvent << std::endl; */
 
     return ZE_RESULT_SUCCESS;
 }
@@ -74,14 +65,12 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyEpilogue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
-    std::cout << "eventsDeadlockChecker: zeEventDestroyEpilogue" << std::endl;
-    std::cout << "\thEvent pointer address: " << hEvent << std::endl;
 
     if (eventToDagID.find(hEvent) != eventToDagID.end()) {
-        // std::cout << "\t\tDeleted event from eventToDagID but not the DAG TODO" << std::endl;
-        eventToDagID[hEvent] = invalidDagID;
-    }
+        // Deleted event from eventToDagID but not from the dagIDToAction map as it may be needed for printing the discription of the action when printing path in the DAG.
 
+        eventToDagID.erase(hEvent);
+    }
 
     return ZE_RESULT_SUCCESS;
 }
@@ -97,11 +86,8 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelP
     ze_event_handle_t *phWaitEvents          ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                              ///< on before launching
 ) {
-    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelPrologue" << std::endl;
-    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
-    for (uint32_t i = 0; i < numWaitEvents; i++) {
-        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
-    } */
+
+    checkForDeadlock("zeCommandListAppendLaunchKernelPrologue", hSignalEvent, numWaitEvents, phWaitEvents);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -117,12 +103,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelE
     ze_event_handle_t *phWaitEvents          ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                              ///< on before launching
 ) {
-    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelEpilogue" << std::endl;
-    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
-    for (uint32_t i = 0; i < numWaitEvents; i++) {
-        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
-    } */
-    // printf("\thEvent pointer address: %p\n", hEvent);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -138,6 +118,8 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchCoopera
     ze_event_handle_t *phWaitEvents          ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                              ///< on before launching
 ) {
+
+    checkForDeadlock("zeCommandListAppendLaunchCooperativeKernelPrologue", hSignalEvent, numWaitEvents, phWaitEvents);
 
     return ZE_RESULT_SUCCESS;
 }
@@ -170,12 +152,28 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
                                            ///< on before launching
 ) {
 
-    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue" << std::endl;
-    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
-    for (uint32_t i = 0; i < numWaitEvents; i++) {
-        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
-    } */
+    checkForDeadlock("zeCommandListAppendMemoryCopyPrologue", hSignalEvent, numWaitEvents, phWaitEvents);
 
+    return ZE_RESULT_SUCCESS;
+}
+
+ze_result_t
+eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyEpilogue(
+    ze_command_list_handle_t hCommandList, ///< [in] handle of command list
+    void *dstptr,                          ///< [in] pointer to destination memory to copy to
+    const void *srcptr,                    ///< [in] pointer to source memory to copy from
+    size_t size,                           ///< [in] size in bytes to copy
+    ze_event_handle_t hSignalEvent,        ///< [in][optional] handle of the event to signal on completion
+    uint32_t numWaitEvents,                ///< [in][optional] number of events to wait on before launching; must be 0
+                                           ///< if `nullptr == phWaitEvents`
+    ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
+                                           ///< on before launching
+) {
+
+    return ZE_RESULT_SUCCESS;
+}
+
+void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
     int this_action_new_node_id = invalidDagID;
 
     if (hSignalEvent != nullptr) {
@@ -241,31 +239,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
             std::terminate();
         }
     }
-
-    return ZE_RESULT_SUCCESS;
-}
-
-ze_result_t
-eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyEpilogue(
-    ze_command_list_handle_t hCommandList, ///< [in] handle of command list
-    void *dstptr,                          ///< [in] pointer to destination memory to copy to
-    const void *srcptr,                    ///< [in] pointer to source memory to copy from
-    size_t size,                           ///< [in] size in bytes to copy
-    ze_event_handle_t hSignalEvent,        ///< [in][optional] handle of the event to signal on completion
-    uint32_t numWaitEvents,                ///< [in][optional] number of events to wait on before launching; must be 0
-                                           ///< if `nullptr == phWaitEvents`
-    ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
-                                           ///< on before launching
-) {
-
-    /*
-    std::cout << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyEpilogue" << std::endl;
-    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
-    for (uint32_t i = 0; i < numWaitEvents; i++) {
-        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
-    }
-    */
-    return ZE_RESULT_SUCCESS;
 }
 
 } // namespace validation_layer
