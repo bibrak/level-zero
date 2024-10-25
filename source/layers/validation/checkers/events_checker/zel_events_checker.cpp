@@ -479,10 +479,12 @@ eventsChecker::ZEeventsChecker::zeCommandListImmediateAppendCommandListsExpProlo
 void eventsChecker::ZEeventsChecker::validateSignalEventOwnership(const std::string &zeCallDisc,
                                                                   const ze_event_handle_t hSignalEvent) {
     const auto it = eventToDagID.find(hSignalEvent);
-    const auto dagID = it->second;
-    if (it != eventToDagID.end() && dagID != invalidDagID) {
-        std::string previousActionOwner = (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction.find(dagID)->second.first : "UNKNOWN ACTION";
-        std::cerr << "Warning: " << zeCallDisc << " is using the same ze_event_handle_t for signal {" << hSignalEvent << "} which has been previously used by: " << previousActionOwner << std::endl;
+    if (it != eventToDagID.end() && it->second != invalidDagID) {
+        const auto actionIt = dagIDToAction.find(it->second);
+        if (actionIt != dagIDToAction.end()) {
+            const std::string previousActionOwner = actionIt->second.first;
+            std::cerr << "Warning: " << zeCallDisc << " is using the same ze_event_handle_t for signal {" << hSignalEvent << "} which has been previously used by: " << previousActionOwner << std::endl;
+        }
     }
 }
 
@@ -492,6 +494,7 @@ void eventsChecker::ZEeventsChecker::checkForDeadlock(
     const uint32_t numWaitEvents,         ///< [in][optional] number of events that point to this action.
     const ze_event_handle_t *phWaitEvents ///< [in][optional][range(0, numWaitEvents)] handle of the events that point to this action.
 ) {
+
     uint32_t this_action_new_node_id = invalidDagID;
 
     if (hSignalEvent != nullptr) {
