@@ -532,11 +532,13 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
 
     // Check if user is using invalid events, hint if it doesn't exist in eventToDagID
     if (eventToDagID.find(hSignalEvent) == eventToDagID.end()) {
-        std::cerr << "Warning: Wait event " << hSignalEvent << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+        std::cerr << "Warning: hSignalEvent event " << hSignalEvent << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+        return;
     }
     for (uint32_t i = 0; i < numWaitEvents; i++) {
         if (eventToDagID.find(phWaitEvents[i]) == eventToDagID.end()) {
             std::cerr << "Warning: Wait event " << phWaitEvents[i] << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+            return;
         }
     }
 
@@ -563,7 +565,7 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
 
     // Add this action to the actionToDagID map
     std::ostringstream oss;
-    oss << zeCallDisc << ": hSignalEvent{" << hSignalEvent << "}, phWaitEvents{";
+    oss << zeCallDisc << ": (hSignalEvent{" << hSignalEvent << "}, phWaitEvents{";
 
     for (uint32_t i = 0; i < numWaitEvents; i++) {
         oss << phWaitEvents[i];
@@ -571,7 +573,7 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
             oss << ", ";
         }
     }
-    oss << "}";
+    oss << "})";
 
     std::string action = oss.str(); // Convert the stream to a string
     dagIDToAction[this_action_new_node_id] = actionAndSignalEvent(action, hSignalEvent);
@@ -579,42 +581,36 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
     // Form the dependency in the DAG
     for (uint32_t i = 0; i < numWaitEvents; i++) {
         auto it = eventToDagID.find(phWaitEvents[i]);
-        if (it != eventToDagID.end()) {
-            int dagID = it->second;
-            if (dagID == invalidDagID) {
-                // Create a new node in the DAG for this wait event. That action will be created some time in the future.
-                dagID = addNodeInDag(); // nextDagID++;
-                it->second = dagID;
+
+        int dagID = it->second;
+        if (dagID == invalidDagID) {
+            // Create a new node in the DAG for this wait event. That action will be created some time in the future.
+            dagID = addNodeInDag(); // nextDagID++;
+            it->second = dagID;
+        }
+
+        auto getActionDetails = [&](int dagID) -> std::string {
+            return (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction[dagID].first : "PLACEHOLDER";
+        };
+
+        std::string fromAction = getActionDetails(dagID);
+        std::string toAction = getActionDetails(this_action_new_node_id);
+
+        if (!addEdgeInDag(dagID, this_action_new_node_id)) {
+
+            auto path = dag.PathDagIDs(this_action_new_node_id, dagID, 5);
+
+            std::string spacePrefix = "";
+            std::cerr << "Warning: There may be a potential event deadlock!\n";
+            std::cerr << "Adding the following dependency would create a cycle in the DAG:\n\tFrom:" << fromAction << "\n\tTo:" << toAction << "\n";
+            std::cerr << "There is already a path:\n";
+            auto dagIDsInPath = path.first;
+            std::cerr << getActionDetails(dagIDsInPath[0]) << "\n";
+            for (uint32_t i = 1; i < dagIDsInPath.size(); i++) {
+                std::cerr << spacePrefix << "|\n"
+                          << spacePrefix << "-> " << getActionDetails(dagIDsInPath[i]) << "\n";
+                spacePrefix += "   ";
             }
-
-            auto getActionDetails = [&](int dagID) -> std::string {
-                return (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction[dagID].first : "PLACEHOLDER";
-            };
-
-            // Add edge (dependency) from dagID to this_action_new_node_id in the DAG.
-            // std::cout << "\tDAG: Trying to add edge from " << dagID << " to " << this_action_new_node_id << std::endl;
-            std::string fromAction = getActionDetails(dagID);
-            std::string toAction = getActionDetails(this_action_new_node_id);
-            // std::cout << "\t\tAction[" << fromAction << "] --> " << "Action[" << toAction << "]" << std::endl;
-
-            if (!addEdgeInDag(dagID, this_action_new_node_id)) {
-                // std::cerr << "\tError adding edge from " << dagID << " to " << this_action_new_node_id << " in DAG!!!!!!" << std::endl;
-                // std::cerr << "\t\tThere is already a path from " << this_action_new_node_id << " to " << dagID << ": " << dag.Path(this_action_new_node_id, dagID, 5) << std::endl;
-                auto path = dag.PathDagIDs(this_action_new_node_id, dagID, 5);
-
-                std::string spacePrefix = "";
-                std::cerr << "Warning: There may be a potential event deadlock! There is already a path from:\n";
-                auto dagIDsInPath = path.first;
-                std::cerr << getActionDetails(dagIDsInPath[0]) << "\n";
-                for (uint32_t i = 1; i < dagIDsInPath.size(); i++) {
-                    std::cerr << spacePrefix << "|\n"
-                              << spacePrefix << "-> " << getActionDetails(dagIDsInPath[i]) << "\n";
-                    spacePrefix += "   ";
-                }
-            }
-        } else {
-            std::cerr << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue: Error: Wait event not found in eventToDagID map" << std::endl;
-            std::terminate();
         }
     }
 }

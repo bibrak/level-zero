@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
     // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
-     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
     /* std::cout << std::endl
               << std::endl; */
 
