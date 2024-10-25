@@ -528,7 +528,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListImmediateAppendComm
 }
 
 void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
-    int this_action_new_node_id = invalidDagID;
+    uint32_t this_action_new_node_id = invalidDagID;
 
     // Check if user is using invalid events, hint if it doesn't exist in eventToDagID
     if (eventToDagID.find(hSignalEvent) == eventToDagID.end()) {
@@ -548,19 +548,15 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
             // This event already exists in the DAG. Get the DAG node ID.
             // For example when there is indeed a deadlock it would have already been created.
             this_action_new_node_id = it->second;
-
-            // std::cout << "\tFound event in eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
         }
     }
 
     if (this_action_new_node_id == invalidDagID) {
         // Create node in DAG
-        this_action_new_node_id = addNodeInDag(); // nextDagID++;
+        this_action_new_node_id = addNodeInDag();
 
         // Now we know where the hSignalEvent points from/out in the DAG. Update the eventToDagID map.
         eventToDagID[hSignalEvent] = this_action_new_node_id;
-
-        // std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
     }
 
     // Add this action to the actionToDagID map
@@ -582,34 +578,39 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
     for (uint32_t i = 0; i < numWaitEvents; i++) {
         auto it = eventToDagID.find(phWaitEvents[i]);
 
-        int dagID = it->second;
+        uint32_t dagID = it->second;
         if (dagID == invalidDagID) {
             // Create a new node in the DAG for this wait event. That action will be created some time in the future.
-            dagID = addNodeInDag(); // nextDagID++;
+            dagID = addNodeInDag();
             it->second = dagID;
         }
 
         auto getActionDetails = [&](int dagID) -> std::string {
-            return (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction[dagID].first : "PLACEHOLDER";
+            auto actionIt = dagIDToAction.find(dagID);
+            return (actionIt != dagIDToAction.end()) ? actionIt->second.first : "PLACEHOLDER";
         };
 
-        std::string fromAction = getActionDetails(dagID);
-        std::string toAction = getActionDetails(this_action_new_node_id);
-
         if (!addEdgeInDag(dagID, this_action_new_node_id)) {
+            std::string fromAction = getActionDetails(dagID);
+            std::string toAction = getActionDetails(this_action_new_node_id);
 
-            auto path = dag.PathDagIDs(this_action_new_node_id, dagID, 5);
-
-            std::string spacePrefix = "";
             std::cerr << "Warning: There may be a potential event deadlock!\n";
-            std::cerr << "Adding the following dependency would create a cycle in the DAG:\n\tFrom:" << fromAction << "\n\tTo:" << toAction << "\n";
+            std::cerr << "Adding the following dependency would create a cycle in the DAG:\n\tFrom: " << fromAction << "\n\tTo: " << toAction << "\n";
             std::cerr << "There is already a path:\n";
+
+            constexpr uint32_t maxPathLength = 15;
+            auto path = dag.PathDagIDs(this_action_new_node_id, dagID, maxPathLength);
             auto dagIDsInPath = path.first;
             std::cerr << getActionDetails(dagIDsInPath[0]) << "\n";
-            for (uint32_t i = 1; i < dagIDsInPath.size(); i++) {
+            std::string spacePrefix = "";
+            for (uint32_t j = 1; j < dagIDsInPath.size(); j++) {
                 std::cerr << spacePrefix << "|\n"
-                          << spacePrefix << "-> " << getActionDetails(dagIDsInPath[i]) << "\n";
+                          << spacePrefix << "-> " << getActionDetails(dagIDsInPath[j]) << "\n";
                 spacePrefix += "   ";
+            }
+            if (path.second) {
+                std::cerr << spacePrefix << "|\n"
+                          << spacePrefix << "-> ...\n";
             }
         }
     }

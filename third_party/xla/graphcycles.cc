@@ -389,8 +389,11 @@ std::pair<std::vector<int32_t>, bool> GraphCycles::PathDagIDs(int x, int y, cons
   int np = FindPath(x, y, kPathSize, path.data());
   bool overflow = np > max_path_len;
   
-  for (int i = 0; i < np; i++) { 
-     path.push_back(path[i]);
+  for (int i = 0; i < np; i++) {
+      if (i >= kPathSize) {
+          break;
+      } 
+      path.push_back(path[i]);
   }
 
   return std::pair<std::vector<int32_t>, bool>(path, overflow);

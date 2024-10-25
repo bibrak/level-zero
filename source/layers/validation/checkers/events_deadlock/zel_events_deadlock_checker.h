@@ -14,11 +14,12 @@
 #include "ze_api.h"
 #include "ze_validation_layer.h"
 
+#include <limits> 
 #include <string>
 
 namespace validation_layer {
 
-constexpr int invalidDagID = -1;
+constexpr uint32_t invalidDagID = std::numeric_limits<uint32_t>::max();
 using actionAndSignalEvent = std::pair<std::string, ze_event_handle_t>;
 
 class __zedlllocal eventsDeadlockChecker : public validationChecker {
@@ -48,25 +49,25 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         ze_result_t zeCommandListAppendSignalEventPrologue(ze_command_list_handle_t hCommandList, ze_event_handle_t hEvent) override;
         ze_result_t zeCommandListAppendWaitOnEventsPrologue(ze_command_list_handle_t hCommandList, uint32_t numEvents, ze_event_handle_t *phEvents) override;
         ze_result_t zeEventHostSignalPrologue(ze_event_handle_t hEvent) override;
-        ze_result_t zeCommandListAppendEventResetPrologue( ze_command_list_handle_t hCommandList, ze_event_handle_t hEvent ) override;
-        ze_result_t zeEventHostResetPrologue( ze_event_handle_t hEvent ) override;
-        ze_result_t zeCommandListAppendQueryKernelTimestampsPrologue( ze_command_list_handle_t hCommandList, uint32_t numEvents, ze_event_handle_t* phEvents, void* dstptr, const size_t* pOffsets, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendLaunchKernelPrologue( ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t* pLaunchFuncArgs, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendLaunchCooperativeKernelPrologue( ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t* pLaunchFuncArgs, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendLaunchKernelIndirectPrologue( ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t* pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendLaunchMultipleKernelsIndirectPrologue( ze_command_list_handle_t hCommandList, uint32_t numKernels, ze_kernel_handle_t* phKernels, const uint32_t* pCountBuffer, const ze_group_count_t* pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListUpdateMutableCommandSignalEventExpPrologue( ze_command_list_handle_t hCommandList, uint64_t commandId, ze_event_handle_t hSignalEvent ) override;
-        ze_result_t zeCommandListUpdateMutableCommandWaitEventsExpPrologue( ze_command_list_handle_t hCommandList, uint64_t commandId, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendImageCopyToMemoryExtPrologue( ze_command_list_handle_t hCommandList, void* dstptr, ze_image_handle_t hSrcImage, const ze_image_region_t* pSrcRegion, uint32_t destRowPitch, uint32_t destSlicePitch, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListAppendImageCopyFromMemoryExtPrologue( ze_command_list_handle_t hCommandList, ze_image_handle_t hDstImage, const void* srcptr, const ze_image_region_t* pDstRegion, uint32_t srcRowPitch, uint32_t srcSlicePitch, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
-        ze_result_t zeCommandListImmediateAppendCommandListsExpPrologue( ze_command_list_handle_t hCommandListImmediate, uint32_t numCommandLists, ze_command_list_handle_t* phCommandLists, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t* phWaitEvents ) override;
+        ze_result_t zeCommandListAppendEventResetPrologue(ze_command_list_handle_t hCommandList, ze_event_handle_t hEvent) override;
+        ze_result_t zeEventHostResetPrologue(ze_event_handle_t hEvent) override;
+        ze_result_t zeCommandListAppendQueryKernelTimestampsPrologue(ze_command_list_handle_t hCommandList, uint32_t numEvents, ze_event_handle_t *phEvents, void *dstptr, const size_t *pOffsets, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendLaunchKernelPrologue(ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t *pLaunchFuncArgs, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendLaunchCooperativeKernelPrologue(ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t *pLaunchFuncArgs, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendLaunchKernelIndirectPrologue(ze_command_list_handle_t hCommandList, ze_kernel_handle_t hKernel, const ze_group_count_t *pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendLaunchMultipleKernelsIndirectPrologue(ze_command_list_handle_t hCommandList, uint32_t numKernels, ze_kernel_handle_t *phKernels, const uint32_t *pCountBuffer, const ze_group_count_t *pLaunchArgumentsBuffer, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListUpdateMutableCommandSignalEventExpPrologue(ze_command_list_handle_t hCommandList, uint64_t commandId, ze_event_handle_t hSignalEvent) override;
+        ze_result_t zeCommandListUpdateMutableCommandWaitEventsExpPrologue(ze_command_list_handle_t hCommandList, uint64_t commandId, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendImageCopyToMemoryExtPrologue(ze_command_list_handle_t hCommandList, void *dstptr, ze_image_handle_t hSrcImage, const ze_image_region_t *pSrcRegion, uint32_t destRowPitch, uint32_t destSlicePitch, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListAppendImageCopyFromMemoryExtPrologue(ze_command_list_handle_t hCommandList, ze_image_handle_t hDstImage, const void *srcptr, const ze_image_region_t *pDstRegion, uint32_t srcRowPitch, uint32_t srcSlicePitch, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
+        ze_result_t zeCommandListImmediateAppendCommandListsExpPrologue(ze_command_list_handle_t hCommandListImmediate, uint32_t numCommandLists, ze_command_list_handle_t *phCommandLists, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
 
       private:
         // Add node in the DAG and get its ID.
         int addNodeInDag() { return dag.NewNode(); }
 
         // Add edge in the DAG.
-        bool addEdgeInDag(int x, int y) { return dag.InsertEdge(x, y); }
+        bool addEdgeInDag(uint32_t x, uint32_t y) { return dag.InsertEdge(x, y); }
 
         // Inserts new actions and events in the DAG based on the ze<API CALLS>.
         void checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents);
@@ -75,10 +76,10 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         xla::GraphCycles dag;
 
         // events point from/out to a DAG node. This map stores the DAG ID for each event (if there is one).
-        std::unordered_map<ze_event_handle_t, int> eventToDagID;
+        std::unordered_map<ze_event_handle_t, uint32_t> eventToDagID;
 
         // This map acts as a bi-directional map to eventToDagID. It maps DAG ID to a pair containing action description and signal event.
-        std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
+        std::unordered_map<uint32_t, actionAndSignalEvent> dagIDToAction;
     };
     class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};
