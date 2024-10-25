@@ -37,20 +37,22 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "absl/algorithm/container.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/str_cat.h"
-#include "absl/types/span.h"
+// #include "absl/algorithm/container.h"
+// #include "absl/container/flat_hash_set.h"
+// #include "absl/strings/str_cat.h"
+// #include "absl/types/span.h"
 
 //#include "xla/service/graphcycles/ordered_set.h"
 #include "ordered_set.h"
+#include <unordered_set>
+#include <iostream>
 //#include "tsl/platform/logging.h"
 
 namespace xla {
 
 namespace {
 
-using NodeSet = absl::flat_hash_set<int32_t>;
+using NodeSet = std::unordered_set<int32_t>;
 using OrderedNodeSet = OrderedSet<int32_t>;
 
 struct Node {
@@ -181,11 +183,11 @@ void GraphCycles::RemoveEdge(int32_t x, int32_t y) {
 static bool ForwardDFS(GraphCycles::Rep* r, int32_t n, int32_t upper_bound);
 static void BackwardDFS(GraphCycles::Rep* r, int32_t n, int32_t lower_bound);
 static void Reorder(GraphCycles::Rep* r);
-static void Sort(absl::Span<const Node>, std::vector<int32_t>* delta);
+static void Sort(const std::vector<Node>& nodes, std::vector<int32_t>* delta);
 static void MoveToList(GraphCycles::Rep* r, std::vector<int32_t>* src,
                        std::vector<int32_t>* dst);
 static void ClearVisitedBits(GraphCycles::Rep* r,
-                             absl::Span<const int32_t> visited_indices);
+                             const std::vector<int32_t>& visited_indices);
 
 bool GraphCycles::InsertEdge(int32_t x, int32_t y) {
   if (x == y) return false;
@@ -294,7 +296,7 @@ static void Reorder(GraphCycles::Rep* r) {
   }
 }
 
-static void Sort(absl::Span<const Node> nodes, std::vector<int32_t>* delta) {
+static void Sort(const std::vector<Node>& nodes, std::vector<int32_t>* delta) {
   std::sort(delta->begin(), delta->end(), [&](int32_t a, int32_t b) {
     return nodes[a].rank < nodes[b].rank;
   });
@@ -311,9 +313,9 @@ static void MoveToList(GraphCycles::Rep* r, std::vector<int32_t>* src,
 }
 
 static void ClearVisitedBits(GraphCycles::Rep* r,
-                             absl::Span<const int32_t> visited_indices) {
+               const std::vector<int32_t>& visited_indices) {
   for (auto index : visited_indices) {
-    r->nodes_[index].visited = false;
+  r->nodes_[index].visited = false;
   }
 }
 
@@ -390,15 +392,15 @@ bool GraphCycles::CanContractEdge(int32_t a, int32_t b) {
   return !reachable;
 }
 
-//std::optional<int32_t> GraphCycles::ContractEdge(int32_t a, int32_t b) {
-  int32_t GraphCycles::ContractEdge(int32_t a, int32_t b) {
+int32_t GraphCycles::ContractEdge(int32_t a, int32_t b, bool &success) {
   CHECK(HasEdge(a, b));
   RemoveEdge(a, b);
 
   if (IsReachableNonConst(a, b)) {
     // Restore the graph to its original state.
     InsertEdge(a, b);
-    return -1; //std::nullopt;
+    success = false;
+    return -1;
   }
 
   if (rep_->node_io_[b].in.Size() + rep_->node_io_[b].out.Size() >
@@ -429,46 +431,50 @@ bool GraphCycles::CanContractEdge(int32_t a, int32_t b) {
   }
 
   // Note, if the swap happened it might be what originally was called "b".
+  success = true;
   return a;
 }
 
-absl::Span<const int32_t> GraphCycles::Successors(int32_t node) const {
+std::vector<int32_t> GraphCycles::Successors(int32_t node) const {
   return rep_->node_io_[node].out.GetSequence();
 }
 
-absl::Span<const int32_t> GraphCycles::Predecessors(int32_t node) const {
+std::vector<int32_t> GraphCycles::Predecessors(int32_t node) const {
   return rep_->node_io_[node].in.GetSequence();
 }
 
 std::vector<int32_t> GraphCycles::SuccessorsCopy(int32_t node) const {
-  absl::Span<const int32_t> successors = Successors(node);
-  return std::vector<int32_t>(successors.begin(), successors.end());
+  return Successors(node);
 }
 
 std::vector<int32_t> GraphCycles::PredecessorsCopy(int32_t node) const {
-  absl::Span<const int32_t> predecessors = Predecessors(node);
-  return std::vector<int32_t>(predecessors.begin(), predecessors.end());
+  return Predecessors(node);
 }
 
 namespace {
-void SortInPostOrder(absl::Span<const Node> nodes,
-                     std::vector<int32_t>* to_sort) {
-  absl::c_sort(*to_sort, [&](int32_t a, int32_t b) {
-    DCHECK(a == b || nodes[a].rank != nodes[b].rank);
-    return nodes[a].rank > nodes[b].rank;
+void SortInPostOrder(const std::vector<Node>& nodes,
+       std::vector<int32_t>* to_sort) {
+  std::sort(to_sort->begin(), to_sort->end(), [&](int32_t a, int32_t b) {
+  DCHECK(a == b || nodes[a].rank != nodes[b].rank);
+  return nodes[a].rank > nodes[b].rank;
   });
 }
 }  // namespace
 
+auto contains = [](const std::unordered_set<int32_t>& set, int32_t key) {
+    return set.find(key) != set.end();
+};
+
 std::vector<int32_t> GraphCycles::AllNodesInPostOrder() const {
-  absl::flat_hash_set<int32_t> free_nodes_set;
-  absl::c_copy(rep_->free_nodes_,
-               std::inserter(free_nodes_set, free_nodes_set.begin()));
+  std::unordered_set<int32_t> free_nodes_set;
+  std::copy(rep_->free_nodes_.begin(), rep_->free_nodes_.end(),
+            std::inserter(free_nodes_set, free_nodes_set.begin()));
 
   std::vector<int32_t> all_nodes;
   all_nodes.reserve(rep_->nodes_.size() - free_nodes_set.size());
+
   for (int64_t i = 0, e = rep_->nodes_.size(); i < e; i++) {
-    if (!free_nodes_set.contains(i)) {
+    if (!contains(free_nodes_set, i)) {
       all_nodes.push_back(i);
     }
   }
@@ -478,21 +484,21 @@ std::vector<int32_t> GraphCycles::AllNodesInPostOrder() const {
 }
 
 std::string GraphCycles::DebugString() const {
-  absl::flat_hash_set<int32_t> free_nodes_set(rep_->free_nodes_.begin(),
+  std::unordered_set<int32_t> free_nodes_set(rep_->free_nodes_.begin(),
                                               rep_->free_nodes_.end());
 
   std::string result = "digraph {\n";
   for (int i = 0, end = rep_->nodes_.size(); i < end; i++) {
-    if (free_nodes_set.contains(i)) {
+    if (!contains(free_nodes_set, i)) {
       continue;
     }
 
     for (int32_t succ : rep_->node_io_[i].out.GetSequence()) {
-      absl::StrAppend(&result, "  \"", i, "\" -> \"", succ, "\"\n");
+      result += "  \"" + std::to_string(i) + "\" -> \"" + std::to_string(succ) + "\"\n";
     }
   }
 
-  absl::StrAppend(&result, "}\n");
+  result += "}\n";
 
   return result;
 }

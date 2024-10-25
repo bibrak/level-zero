@@ -15,6 +15,7 @@ namespace validation_layer {
 class eventsDeadlockChecker eventsDeadlock_checker;
 
 eventsDeadlockChecker::eventsDeadlockChecker() {
+    std::cout << "eventsDeadlockChecker() called!\n";
     enableEventsDeadlock = getenv_tobool("ZEL_ENABLE_EVENTSDEADLOCK_CHECKER");
     if (enableEventsDeadlock) {
         eventsDeadlockChecker::ZEeventsDeadlockChecker *zeChecker = new eventsDeadlockChecker::ZEeventsDeadlockChecker;
@@ -80,6 +81,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyEpilogue(
         // std::cout << "\t\tDeleted event from eventToDagID but not the DAG TODO" << std::endl;
         eventToDagID[hEvent] = invalidDagID;
     }
+
 
     return ZE_RESULT_SUCCESS;
 }

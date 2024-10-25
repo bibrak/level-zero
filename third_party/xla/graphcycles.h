@@ -40,9 +40,11 @@ limitations under the License.
 //   FindPath() is linear in the size of the graph.
 // The current implementation uses O(|V|+|E|) space.
 
-#include <optional>
+// #include <optional>
 
-#include "absl/types/span.h"
+// #include "absl/types/span.h"
+// #include <span>
+#include <string>
 
 #define ASSERT_TRUE(condition)                                                                                               \
   do                                                                                                                         \
@@ -127,8 +129,7 @@ class GraphCycles {
   // the nodes is removed from the graph, and edges to/from it are added to
   // the remaining one, which is returned. If contracting the edge would create
   // a cycle, does nothing and return no value.
-  // std::optional<int32_t> ContractEdge(int32_t a, int32_t b);
-  int32_t ContractEdge(int32_t a, int32_t b);
+  int32_t ContractEdge(int32_t a, int32_t b, bool &success);
 
   // Return true if can contract edge, otherwise return false.
   bool CanContractEdge(int32_t a, int32_t b);
@@ -165,8 +166,8 @@ class GraphCycles {
 
   // Warning: Do not use these if iterating over the span and modifying the
   // GraphCycles at the same time. Instead use SuccessorsCopy/PredecessorsCopy.
-  absl::Span<const int32_t> Successors(int32_t node) const;
-  absl::Span<const int32_t> Predecessors(int32_t node) const;
+  std::vector<int32_t> Successors(int32_t node) const;
+  std::vector<int32_t> Predecessors(int32_t node) const;
 
   // Return a copy of the successors set. This is needed for code using the
   // collection while modifying the GraphCycles.

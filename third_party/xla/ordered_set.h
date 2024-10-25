@@ -17,10 +17,12 @@ limitations under the License.
 #define XLA_SERVICE_GRAPHCYCLES_ORDERED_SET_H_
 
 #include <vector>
+#include <iostream>
+#include <unordered_map>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/types/span.h" 
-//using absl = std;
+// #include "absl/container/flat_hash_map.h"
+// #include "absl/types/span.h" 
+
 //#include "tsl/platform/logging.h"
 
 namespace xla {
@@ -48,9 +50,7 @@ class OrderedSet {
   // set.
   void Erase(T value) {
     auto it = value_to_index_.find(value);
-    //DCHECK(it != value_to_index_.end());
-    assert(it != value_to_index_.end());
-
+    CHECK(it != value_to_index_.end());
 
     // Since we don't want to move values around in `value_sequence_` we swap
     // the value in the last position and with value to be deleted and then
@@ -71,18 +71,18 @@ class OrderedSet {
     value_sequence_.clear();
   }
 
-  bool Contains(T value) const { return value_to_index_.contains(value); }
+  bool Contains(T value) const { return value_to_index_.find(value) != value_to_index_.end(); }
   size_t Size() const { return value_sequence_.size(); }
 
-  absl::Span<T const> GetSequence() const { return value_sequence_; }
+  std::vector<T> const& GetSequence() const { return value_sequence_; }
 
  private:
   // The stable order that we maintain through insertions and deletions.
   std::vector<T> value_sequence_;
 
   // Maps values to their indices in `value_sequence_`.
-  absl::flat_hash_map<T, int> value_to_index_;
-};
+  std::unordered_map<T, int> value_to_index_;
+};;
 }  // namespace xla
 
 #endif  // XLA_SERVICE_GRAPHCYCLES_ORDERED_SET_H_
