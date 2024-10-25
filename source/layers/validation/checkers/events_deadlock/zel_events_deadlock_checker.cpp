@@ -530,14 +530,14 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListImmediateAppendComm
 void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::string zeCallDisc, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) {
     uint32_t this_action_new_node_id = invalidDagID;
 
-    // Check if user is using invalid events, hint if it doesn't exist in eventToDagID
+    // Check if user is using invalid events, hint if it doesn't exist in eventToDagID.
     if (eventToDagID.find(hSignalEvent) == eventToDagID.end()) {
-        std::cerr << "Warning: hSignalEvent event " << hSignalEvent << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+        std::cerr << "Warning: hSignalEvent {" << hSignalEvent << "} might be an invalid event." << std::endl;
         return;
     }
     for (uint32_t i = 0; i < numWaitEvents; i++) {
         if (eventToDagID.find(phWaitEvents[i]) == eventToDagID.end()) {
-            std::cerr << "Warning: Wait event " << phWaitEvents[i] << " does not exist in eventToDagID map. It might be an invalid event." << std::endl;
+            std::cerr << "Warning: phWaitEvents {" << hSignalEvent << "} might be an invalid event." << std::endl;
             return;
         }
     }
@@ -559,7 +559,7 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
         eventToDagID[hSignalEvent] = this_action_new_node_id;
     }
 
-    // Add this action to the actionToDagID map
+    // Add this action to the actionToDagID map.
     std::ostringstream oss;
     oss << zeCallDisc << ": (hSignalEvent{" << hSignalEvent << "}, phWaitEvents{";
 
@@ -571,7 +571,7 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::checkForDeadlock(std::strin
     }
     oss << "})";
 
-    std::string action = oss.str(); // Convert the stream to a string
+    std::string action = oss.str(); // Convert the stream to a string.
     dagIDToAction[this_action_new_node_id] = actionAndSignalEvent(action, hSignalEvent);
 
     // Form the dependency in the DAG
