@@ -324,14 +324,16 @@ TEST(
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     std::stringstream capture;
-    std::streambuf *old_buf;
-
-    old_buf = std::cerr.rdbuf();
+    std::streambuf *old_cerr_buf = std::cerr.rdbuf();
+    std::streambuf *old_cout_buf = std::cout.rdbuf();
     std::cerr.rdbuf(capture.rdbuf());
+    std::cout.rdbuf(capture.rdbuf());
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]);
-    std::cerr.rdbuf(old_buf);
+
+    std::cerr.rdbuf(old_cerr_buf);
+    std::cout.rdbuf(old_cout_buf);
 
     auto found = capture.str().find("Warning: There may be a potential event deadlock");
     EXPECT_NE(found, std::string::npos);
@@ -355,12 +357,15 @@ TEST(
     capture.str("");
     capture.clear();
 
-    old_buf = std::cerr.rdbuf();
+    old_cerr_buf = std::cerr.rdbuf();
+    old_cout_buf = std::cout.rdbuf();
     std::cerr.rdbuf(capture.rdbuf());
+    std::cout.rdbuf(capture.rdbuf());
 
     // Explicitly break the dependency by signaling the last event.
     status = zeEventHostSignal(event[2]);
-    std::cerr.rdbuf(old_buf);
+    std::cerr.rdbuf(old_cerr_buf);
+    std::cout.rdbuf(old_cout_buf);
 
     found = capture.str().find("Warning: zeEventHostSignal is using the same ze_event_handle_t");
     EXPECT_NE(found, std::string::npos);
@@ -542,14 +547,15 @@ TEST(
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     std::stringstream capture;
-    std::streambuf *old_buf;
-
-    old_buf = std::cerr.rdbuf();
+    std::streambuf *old_cerr_buf = std::cerr.rdbuf();
+    std::streambuf *old_cout_buf = std::cout.rdbuf();
     std::cerr.rdbuf(capture.rdbuf());
+    std::cout.rdbuf(capture.rdbuf());
 
-     // Host to Device, signals event[0] and is dependent on nothing.
+    // Host to Device, signals event[0] and is dependent on nothing.
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr);
-    std::cerr.rdbuf(old_buf);
+    std::cerr.rdbuf(old_cerr_buf);
+    std::cout.rdbuf(old_cout_buf);
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     auto warningText = capture.str();
