@@ -193,23 +193,20 @@ int main(int argc, char *argv[]) {
     device_desc.ordinal = 0;
     device_desc.flags = 0;
 
-
     void *device_mem_ptr = nullptr;
     SUCCESS_OR_TERMINATE(zeMemAllocDevice(context, &device_desc, buffer_size, 0, pDevice, &device_mem_ptr));
 
     std::cout << "\n\n\n";
 
-    // Action_0: Host to Device
+    // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
 
     // Action_1: Host to Device, is dependent on Action_0
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[1], 1, &event[0]));
 
-    // Action_2: Host to Device, is dependent on Action_1
+    // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
     SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
-
-    // Create the event deadlock by having event[2] dependent on Action_0
-    // TODO!!! It will be created when creating Action_0 and specifying event[2] as the dependent event
 
     std::cout << "\n\n\n";
 

@@ -181,21 +181,27 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
                 // This event already exists in the DAG. Get the DAG node ID.
                 // For example when there is indeed a deadlock it would have already been created.
                 this_action_new_node_id = eventToDagID[hSignalEvent];
-            } else {
+                std::cout << "\tFound event in eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
+            }/*  else {
                 // Create node in DAG
                 this_action_new_node_id = nextDagID;
                 nextDagID++;
 
                 // Now we know where the hSignalEvent points from/out in the DAG. Update the eventtoDagID map.
                 eventToDagID[hSignalEvent] = this_action_new_node_id;
-                // std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
-            }
+                std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
+            } */
         }
     }
 
     if (this_action_new_node_id == invalidDagID) {
-        std::cerr << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue: Error: this_action_new_node_id is invalid" << std::endl;
-        std::terminate();
+        // Create node in DAG
+        this_action_new_node_id = nextDagID;
+        nextDagID++;
+
+        // Now we know where the hSignalEvent points from/out in the DAG. Update the eventtoDagID map.
+        eventToDagID[hSignalEvent] = this_action_new_node_id;
+        std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
     }
 
     // Add this action to the actionToDagID map
