@@ -381,6 +381,21 @@ std::string GraphCycles::Path(int x, int y, const int max_path_len) {
   return result;
 }
 
+std::pair<std::vector<int32_t>, bool> GraphCycles::PathDagIDs(int x, int y, const int max_path_len) {
+  static const int kPathSize = max_path_len;
+  std::vector<int32_t> path;
+  path.reserve(kPathSize);
+  
+  int np = FindPath(x, y, kPathSize, path.data());
+  bool overflow = np > max_path_len;
+  
+  for (int i = 0; i < np; i++) { 
+     path.push_back(path[i]);
+  }
+
+  return std::pair<std::vector<int32_t>, bool>(path, overflow);
+}
+
 bool GraphCycles::IsReachable(int32_t x, int32_t y) const {
   return FindPath(x, y, 0, nullptr) > 0;
 }

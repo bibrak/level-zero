@@ -120,6 +120,9 @@ class GraphCycles {
   // Returns the path as string.
   std::string Path(int x, int y, const int max_path_len);
 
+  // Returns the path as vector and overflow pair.
+  std::pair<std::vector<int32_t>, bool> PathDagIDs(int x, int y, const int max_path_len);
+
   // Check internal invariants. Crashes on failure, returns true on success.
   // Expensive: should only be called from graphcycles_test.cc.
   bool CheckInvariants() const;

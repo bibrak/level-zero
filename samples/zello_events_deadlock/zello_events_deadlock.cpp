@@ -203,8 +203,8 @@ int main(int argc, char *argv[]) {
               << std::endl;
 
     // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
-    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
+    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
     std::cout << std::endl
               << std::endl;
 
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
               << std::endl;
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
-    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]));
+    SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
     std::cout << std::endl
               << std::endl;
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
     SUCCESS_OR_TERMINATE(zeCommandQueueCreate(context, pDevice, &command_queue_description, &command_queue));
 
     // This segfaults. TODO!!! Fix
-    // SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
+    SUCCESS_OR_TERMINATE(zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr));
 
     SUCCESS_OR_TERMINATE(zeCommandQueueSynchronize(command_queue, UINT64_MAX));
 
