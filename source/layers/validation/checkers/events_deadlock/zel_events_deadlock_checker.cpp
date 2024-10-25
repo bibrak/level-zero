@@ -232,7 +232,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
 
             if (!addEdgeInDag(dagID, this_action_new_node_id)) {
                 std::cerr << "\tError adding edge from " << dagID << " to " << this_action_new_node_id << " in DAG!!!!!!" << std::endl;
-                std::cerr << "\t\tThere is already a path from " << this_action_new_node_id << " to " << dagID << ": " << Path(this_action_new_node_id, dagID) << std::endl;
+                std::cerr << "\t\tThere is already a path from " << this_action_new_node_id << " to " << dagID << ": " << dag.Path(this_action_new_node_id, dagID, 5) << std::endl;
                 std::cerr << "\tEvent Deadlock detected! Terminating!" << std::endl;
                 std::terminate();
             }

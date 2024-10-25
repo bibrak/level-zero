@@ -160,6 +160,9 @@ class GraphCycles {
   int FindPath(int32_t source, int32_t dest, int max_path_len,
                int32_t path[]) const;
 
+  // Returns the path as string.
+  std::string Path(int x, int y, const int max_path_len);
+
   // Check internal invariants. Crashes on failure, returns true on success.
   // Expensive: should only be called from graphcycles_test.cc.
   bool CheckInvariants() const;

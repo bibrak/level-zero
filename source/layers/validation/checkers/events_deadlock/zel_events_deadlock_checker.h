@@ -41,36 +41,17 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         ze_result_t zeCommandListAppendMemoryCopyEpilogue(ze_command_list_handle_t hCommandList, void *dstptr, const void *srcptr, size_t size, ze_event_handle_t hSignalEvent, uint32_t numWaitEvents, ze_event_handle_t *phWaitEvents) override;
 
       private:
+        // The DAG structure.
+        xla::GraphCycles dag;
+        
         // events point from/out to a DAG node. This map stores the DAG ID for each event (if there is one).
         std::unordered_map<ze_event_handle_t, int> eventToDagID;
 
         // This map acts as a bi-directional map to eventToDagID. It maps DAG ID to a pair containing action description and signal event.
         std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
 
-        int addNodeInDag() { return g_.NewNode(); }
-        bool addEdgeInDag(int x, int y) { return g_.InsertEdge(x, y); }
-
-        std::string Path(int x, int y) {
-            static const int kPathSize = 5;
-            int32_t path[kPathSize];
-            int np = g_.FindPath(x, y, kPathSize, path);
-            std::string result;
-            for (int i = 0; i < np; i++) {
-                if (i >= kPathSize) {
-                    result += " ...";
-                    break;
-                }
-                if (!result.empty())
-                    result.push_back(' ');
-                char buf[20];
-                snprintf(buf, sizeof(buf), "%d", path[i]);
-                result += buf;
-            }
-            return result;
-        }
-
-        // The DAG structure.
-        xla::GraphCycles g_;
+        int addNodeInDag() { return dag.NewNode(); }
+        bool addEdgeInDag(int x, int y) { return dag.InsertEdge(x, y); }
     };
     class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};

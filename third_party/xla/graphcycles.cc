@@ -224,6 +224,7 @@ bool GraphCycles::InsertEdge(int32_t x, int32_t y) {
   return true;
 }
 
+
 static bool ForwardDFS(GraphCycles::Rep* r, int32_t n, int32_t upper_bound) {
   // Avoid recursion since stack space might be limited.
   // We instead keep a stack of nodes to visit.
@@ -357,6 +358,26 @@ int GraphCycles::FindPath(int32_t x, int32_t y, int max_path_len,
   }
 
   return 0;
+}
+
+
+std::string GraphCycles::Path(int x, int y, const int max_path_len) {
+  static const int kPathSize = max_path_len;
+  int32_t path[kPathSize];
+  int np = FindPath(x, y, kPathSize, path);
+  std::string result;
+  for (int i = 0; i < np; i++) {
+      if (i >= kPathSize) {
+          result += " ...";
+          break;
+      }
+      if (!result.empty())
+          result.push_back(' ');
+      char buf[20];
+      snprintf(buf, sizeof(buf), "%d", path[i]);
+      result += buf;
+  }
+  return result;
 }
 
 bool GraphCycles::IsReachable(int32_t x, int32_t y) const {
