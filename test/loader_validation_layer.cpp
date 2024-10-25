@@ -134,7 +134,6 @@ TEST(
 
     // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */);
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     // Action_1: Host to Device, is dependent on Action_0
@@ -148,7 +147,6 @@ TEST(
     std::cerr.rdbuf(capture.rdbuf());
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]);
     std::cerr.rdbuf(old_buf);
 
@@ -169,9 +167,6 @@ TEST(
     ze_command_queue_handle_t command_queue{};
     status = zeCommandQueueCreate(context, pDevice, &command_queue_description, &command_queue);
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
-
-    // Explicitly break the dependency by signaling the last event.
-    // zeEventHostSignal(event[2]);
 
     status = zeCommandQueueExecuteCommandLists(command_queue, 1, &command_list, nullptr);
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
@@ -322,7 +317,6 @@ TEST(
 
     // Action_0: Host to Device, is dependent on a future action called Action_2 (see below).
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 1 /* 1 */, &event[2] /* &start_event */);
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[0], 0, nullptr));
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     // Action_1: Host to Device, is dependent on Action_0
@@ -336,7 +330,6 @@ TEST(
     std::cerr.rdbuf(capture.rdbuf());
 
     // Action_2: Host to Device, is dependent on Action_1. It also creates a deadlock by having Action_0 dependent on it.
-    // SUCCESS_OR_TERMINATE(zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, nullptr /* event[2] */, 1, &event[1]));
     status = zeCommandListAppendMemoryCopy(command_list, device_mem_ptr, host_mem_ptr, buffer_size, event[2], 1, &event[1]);
     std::cerr.rdbuf(old_buf);
 
@@ -486,7 +479,7 @@ TEST(
     EXPECT_EQ(ZE_RESULT_SUCCESS, status);
 
     std::vector<ze_event_handle_t> event{};
-    // Three events for memcpy that will form a circular dependency.
+    // event for memcpy.
     event.resize(1);
 
     ze_event_desc_t ev_desc = {};
