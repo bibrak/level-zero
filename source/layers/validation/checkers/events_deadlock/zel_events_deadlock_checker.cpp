@@ -40,7 +40,6 @@ ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogu
     const ze_event_desc_t *desc,       ///< [in] pointer to event descriptor
     ze_event_handle_t *phEvent         ///< [out] pointer to handle of event object created
 ) {
-
     eventToDagID[*phEvent] = invalidDagID;
 
     return ZE_RESULT_SUCCESS;
@@ -51,8 +50,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyEpilogue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
     if (eventToDagID.find(hEvent) != eventToDagID.end()) {
-        // Deleted event from eventToDagID but not from the dagIDToAction map as it may be needed for printing the discription of the action when printing path in the DAG.
-
+        // Delete event from eventToDagID but not from the dagIDToAction map as it may be needed for printing the discription of the action when printing path in the DAG.
         eventToDagID.erase(hEvent);
     }
 
@@ -71,9 +69,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendMemoryCopy", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -88,9 +84,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendWriteGlobalTi
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before executing query
 ) {
-
     checkForDeadlock("zeCommandListAppendWriteGlobalTimestamp", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -103,9 +97,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendBarrierProlog
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before executing barrier
 ) {
-
     checkForDeadlock("zeCommandListAppendBarrier", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -121,9 +113,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryRangesB
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before executing barrier
 ) {
-
     checkForDeadlock("zeCommandListAppendMemoryRangesBarrier", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -140,9 +130,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryFillPro
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendMemoryFill", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -167,9 +155,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyReg
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendMemoryCopyRegion", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -186,9 +172,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyFro
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendMemoryCopyFromContext", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -203,9 +187,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendImageCopyProl
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendImageCopy", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -222,9 +204,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendImageCopyRegi
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendImageCopyRegion", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -240,9 +220,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendImageCopyToMe
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendImageCopyToMemory", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -258,9 +236,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendImageCopyFrom
     ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                            ///< on before launching
 ) {
-
     checkForDeadlock("zeCommandListAppendImageCopyFromMemory", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -269,9 +245,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendSignalEventPr
     ze_command_list_handle_t hCommandList, ///< [in] handle of the command list
     ze_event_handle_t hEvent               ///< [in] handle of the event
 ) {
-
     checkForDeadlock("zeCommandListAppendSignalEvent", hEvent, 0, nullptr);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -283,7 +257,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendWaitOnEventsP
                                            ///< continuing
 ) {
     checkForDeadlock("zeCommandListAppendWaitOnEvents", nullptr, numEvents, phEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -292,7 +265,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventHostSignalPrologue(
     ze_event_handle_t hEvent ///< [in] handle of the event
 ) {
     checkForDeadlock("zeEventHostSignal", hEvent, 0, nullptr);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -300,7 +272,6 @@ void eventsDeadlockChecker::ZEeventsDeadlockChecker::resetEventInEventToDagID(
     const std::string &zeCallDisc, /// action discription
     const ze_event_handle_t hEvent ///< [in] handle of the event
 ) {
-
     auto it = eventToDagID.find(hEvent);
     // Check if user is using invalid events, hint if it doesn't exist in eventToDagID.
     if (it == eventToDagID.end()) {
@@ -324,9 +295,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendEventResetPro
     ze_command_list_handle_t hCommandList, ///< [in] handle of the command list
     ze_event_handle_t hEvent               ///< [in] handle of the event
 ) {
-
     resetEventInEventToDagID("zeCommandListAppendEventReset", hEvent);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -334,9 +303,7 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventHostResetPrologue(
     ze_event_handle_t hEvent ///< [in] handle of the event
 ) {
-
     resetEventInEventToDagID("zeEventHostReset", hEvent);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -357,7 +324,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendQueryKernelTi
                                            ///< on before executing query
 ) {
     checkForDeadlock("zeCommandListAppendQueryKernelTimestamps", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -373,7 +339,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelP
                                              ///< on before launching
 ) {
     checkForDeadlock("zeCommandListAppendLaunchKernel", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -389,7 +354,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchCoopera
                                              ///< on before launching
 ) {
     checkForDeadlock("zeCommandListAppendLaunchCooperativeKernel", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -406,7 +370,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelI
                                                     ///< on before launching
 ) {
     checkForDeadlock("zeCommandListAppendLaunchKernelIndirect", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -427,7 +390,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchMultipl
                                                     ///< on before launching
 ) {
     checkForDeadlock("zeCommandListAppendLaunchMultipleKernelsIndirect", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -437,9 +399,7 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListUpdateMutableComman
     uint64_t commandId,                    ///< [in] command identifier
     ze_event_handle_t hSignalEvent         ///< [in][optional] handle of the event to signal on completion
 ) {
-
     checkForDeadlock("zeCommandListUpdateMutableCommandSignalEventExp", hSignalEvent, 0, nullptr);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -452,7 +412,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListUpdateMutableComman
                                            ///< on before launching
 ) {
     checkForDeadlock("zeCommandListUpdateMutableCommandWaitEventsExp", nullptr, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -493,7 +452,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendImageCopyFrom
                                            ///< on before launching
 ) {
     checkForDeadlock("zeCommandListAppendImageCopyFromMemoryExt", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
@@ -513,7 +471,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListImmediateAppendComm
                                                     ///< of any appended command list(s)
 ) {
     checkForDeadlock("zeCommandListImmediateAppendCommandListsExp", hSignalEvent, numWaitEvents, phWaitEvents);
-
     return ZE_RESULT_SUCCESS;
 }
 
