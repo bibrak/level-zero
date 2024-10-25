@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "xla/graphcycles.h"
 #include "ze_api.h"
 #include "ze_validation_layer.h"
 
@@ -46,7 +47,31 @@ class __zedlllocal eventsDeadlockChecker : public validationChecker {
         std::unordered_map<int, actionAndSignalEvent> dagIDToAction;
 
         // temporary solution to assign unique ID to each DAG. Eventually, this will come from the DAG object that manages the topological sort.
-        int nextDagID = 0;
+        // int nextDagID = 0;
+
+        int addNodeInDag() { return g_.NewNode(); }
+        bool addEdgeInDag(int x, int y) { return g_.InsertEdge(x, y); }
+
+        std::string Path(int x, int y) {
+            static const int kPathSize = 5;
+            int32_t path[kPathSize];
+            int np = g_.FindPath(x, y, kPathSize, path);
+            std::string result;
+            for (int i = 0; i < np; i++) {
+                if (i >= kPathSize) {
+                    result += " ...";
+                    break;
+                }
+                if (!result.empty())
+                    result.push_back(' ');
+                char buf[20];
+                snprintf(buf, sizeof(buf), "%d", path[i]);
+                result += buf;
+            }
+            return result;
+        }
+
+        xla::GraphCycles g_;
     };
     class ZESeventsDeadlockChecker : public ZESValidationEntryPoints {};
     class ZETeventsDeadlockChecker : public ZETValidationEntryPoints {};

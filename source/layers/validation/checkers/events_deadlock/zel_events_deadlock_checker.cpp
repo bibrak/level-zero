@@ -9,6 +9,7 @@
 #include "zel_events_deadlock_checker.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace validation_layer {
 class eventsDeadlockChecker eventsDeadlock_checker;
@@ -36,7 +37,7 @@ eventsDeadlockChecker::~eventsDeadlockChecker() {
 ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeInitPrologue(
     ze_init_flags_t flags) {
-    std::cout << "eventsDeadlockChecker: zeInitPrologue" << std::endl;
+    // std::cout << "eventsDeadlockChecker: zeInitPrologue" << std::endl;
     return ZE_RESULT_SUCCESS;
 }
 
@@ -49,10 +50,9 @@ ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreatePrologu
     return ZE_RESULT_SUCCESS;
 }
 ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
-    std::cout << "eventsDeadlockChecker: zeEventCreateEpilogue" << std::endl;
 
-    // printf("\tphEvent pointer address: %p\n", phEvent);
-    printf("\t*phEvent pointer address: %p\n", *phEvent);
+    std::cout << "eventsDeadlockChecker: zeEventCreateEpilogue" << std::endl;
+    std::cout << "\t*phEvent pointer address: " << *phEvent << std::endl;
 
     eventToDagID[*phEvent] = invalidDagID;
 
@@ -63,8 +63,8 @@ ze_result_t
 eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyPrologue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
-    std::cout << "eventsDeadlockChecker: zeEventDestroyPrologue" << std::endl;
-    printf("\thEvent pointer address: %p\n", hEvent);
+    /* std::cout << "eventsDeadlockChecker: zeEventDestroyPrologue" << std::endl;
+    std::cout << "\thEvent pointer address: " << hEvent << std::endl; */
 
     return ZE_RESULT_SUCCESS;
 }
@@ -74,10 +74,10 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyEpilogue(
     ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
 ) {
     std::cout << "eventsDeadlockChecker: zeEventDestroyEpilogue" << std::endl;
-    printf("\thEvent pointer address: %p\n", hEvent);
+    std::cout << "\thEvent pointer address: " << hEvent << std::endl;
 
     if (eventToDagID.find(hEvent) != eventToDagID.end()) {
-        printf("\t\tDeleted event from DAG\n");
+        // std::cout << "\t\tDeleted event from eventToDagID but not the DAG TODO" << std::endl;
         eventToDagID[hEvent] = invalidDagID;
     }
 
@@ -95,11 +95,11 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelP
     ze_event_handle_t *phWaitEvents          ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                              ///< on before launching
 ) {
-    std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelPrologue" << std::endl;
-    printf("\tNumber of wait events: %d\n", numWaitEvents);
+    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelPrologue" << std::endl;
+    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
     for (uint32_t i = 0; i < numWaitEvents; i++) {
-        printf("\tphWaitEvents[%d] pointer address: %p\n", i, phWaitEvents[i]);
-    }
+        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
+    } */
 
     return ZE_RESULT_SUCCESS;
 }
@@ -115,11 +115,11 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendLaunchKernelE
     ze_event_handle_t *phWaitEvents          ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                              ///< on before launching
 ) {
-    std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelEpilogue" << std::endl;
-    printf("\tNumber of wait events: %d\n", numWaitEvents);
+    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendLaunchKernelEpilogue" << std::endl;
+    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
     for (uint32_t i = 0; i < numWaitEvents; i++) {
-        printf("\tphWaitEvents[%d] pointer address: %p\n", i, phWaitEvents[i]);
-    }
+        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
+    } */
     // printf("\thEvent pointer address: %p\n", hEvent);
 
     return ZE_RESULT_SUCCESS;
@@ -168,62 +168,70 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
                                            ///< on before launching
 ) {
 
-    std::cout << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue" << std::endl;
-    printf("\t\tNumber of wait events: %d\n", numWaitEvents);
+    /* std::cout << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue" << std::endl;
+    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
     for (uint32_t i = 0; i < numWaitEvents; i++) {
-        printf("\t\tphWaitEvents[%d] pointer address: %p\n", i, phWaitEvents[i]);
-    }
+        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
+    } */
 
     int this_action_new_node_id = invalidDagID;
 
     if (hSignalEvent != nullptr) {
+        auto it = eventToDagID.find(hSignalEvent);
+        if (it != eventToDagID.end() && it->second != invalidDagID) {
+            // This event already exists in the DAG. Get the DAG node ID.
+            // For example when there is indeed a deadlock it would have already been created.
+            this_action_new_node_id = it->second;
 
-        if (eventToDagID.find(hSignalEvent) != eventToDagID.end()) {
-            if (eventToDagID[hSignalEvent] != invalidDagID) {
-                // This event already exists in the DAG. Get the DAG node ID.
-                // For example when there is indeed a deadlock it would have already been created.
-                this_action_new_node_id = eventToDagID[hSignalEvent];
-                std::cout << "\tFound event in eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
-            }
+            // std::cout << "\tFound event in eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
         }
     }
 
     if (this_action_new_node_id == invalidDagID) {
         // Create node in DAG
-        this_action_new_node_id = nextDagID;
-        nextDagID++;
+        this_action_new_node_id = addNodeInDag(); // nextDagID++;
 
-        // Now we know where the hSignalEvent points from/out in the DAG. Update the eventtoDagID map.
+        // Now we know where the hSignalEvent points from/out in the DAG. Update the eventToDagID map.
         eventToDagID[hSignalEvent] = this_action_new_node_id;
-        std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
+
+        // std::cout << "\tUpdated eventToDagID: hSignalEvent = " << hSignalEvent << ", this_action_new_node_id = " << this_action_new_node_id << std::endl;
     }
 
     // Add this action to the actionToDagID map
-    std::string action = "MemoryCopy";
+    std::ostringstream oss;
+    oss << "MemoryCopy: hSignalEvent: " << hSignalEvent << ", phWaitEvents: ";
+
+    for (uint32_t i = 0; i < numWaitEvents; i++) {
+        oss << phWaitEvents[i] << ", ";
+    }
+
+    std::string action = oss.str(); // Convert the stream to a string
     dagIDToAction[this_action_new_node_id] = actionAndSignalEvent(action, hSignalEvent);
 
     // Form the dependency in the DAG
-    if (numWaitEvents != 0) {
+    for (uint32_t i = 0; i < numWaitEvents; i++) {
+        auto it = eventToDagID.find(phWaitEvents[i]);
+        if (it != eventToDagID.end()) {
+            int dagID = it->second;
+            if (dagID == invalidDagID) {
+                // Create a new node in the DAG for this wait event. That action will be created some time in the future.
+                dagID = addNodeInDag(); // nextDagID++;
+                it->second = dagID;
+            }
+            // Add edge (dependency) from dagID to this_action_new_node_id in the DAG.
+            std::cout << "\tDAG: Trying to add edge from " << dagID << " to " << this_action_new_node_id << std::endl;
+            std::string fromAction = (dagIDToAction.find(dagID) != dagIDToAction.end()) ? dagIDToAction[dagID].first : "PLACEHOLDER";
+            std::string toAction = (dagIDToAction.find(this_action_new_node_id) != dagIDToAction.end()) ? dagIDToAction[this_action_new_node_id].first : "PLACEHOLDER";
+            std::cout << "\t\tAction: " << fromAction << " --> " << toAction << std::endl;
 
-        for (uint32_t i = 0; i < numWaitEvents; i++) {
-            if (eventToDagID.find(phWaitEvents[i]) != eventToDagID.end()) {
-
-                int dagID = eventToDagID[phWaitEvents[i]];
-                if (dagID == invalidDagID) {
-                    // Create a new node in the DAG for this wait event. That action will be created some time in the future.
-                    int new_future_node_id = nextDagID;
-                    nextDagID++;
-                    eventToDagID[phWaitEvents[i]] = new_future_node_id;
-
-                    dagID = new_future_node_id;
-                }
-
-                // Add edge (dependency) from dagID to this_action_new_node_id in the DAG.
-                std::cout << "\tDAG: Adding edge from " << dagID << " to " << this_action_new_node_id << std::endl;
-            } else {
-                std::cerr << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue: Error: Wait event not found in eventToDagID map" << std::endl;
+            if (!addEdgeInDag(dagID, this_action_new_node_id)) {
+                std::cerr << "\tError adding edge from " << dagID << " to " << this_action_new_node_id << " in DAG!!!!!!" << std::endl;
+                std::cerr << "\tEvent Deadlock detected! Terminating!" << std::endl;
                 std::terminate();
             }
+        } else {
+            std::cerr << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyPrologue: Error: Wait event not found in eventToDagID map" << std::endl;
+            std::terminate();
         }
     }
 
@@ -245,9 +253,9 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyEpi
 
     /*
     std::cout << "eventsDeadlockChecker: zeCommandListAppendMemoryCopyEpilogue" << std::endl;
-    printf("\t\tNumber of wait events: %d\n", numWaitEvents);
+    std::cout << "\tNumber of wait events: " << numWaitEvents << std::endl;
     for (uint32_t i = 0; i < numWaitEvents; i++) {
-        printf("\t\tphWaitEvents[%d] pointer address: %p\n", i, phWaitEvents[i]);
+        std::cout << "\tphWaitEvents[" << i << "] pointer address: " << phWaitEvents[i] << std::endl;
     }
     */
     return ZE_RESULT_SUCCESS;
