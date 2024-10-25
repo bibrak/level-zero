@@ -35,28 +35,9 @@ eventsDeadlockChecker::~eventsDeadlockChecker() {
     }
 }
 
-ze_result_t
-eventsDeadlockChecker::ZEeventsDeadlockChecker::zeInitPrologue(
-    ze_init_flags_t flags) {
-
-    return ZE_RESULT_SUCCESS;
-}
-
-ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreatePrologue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
-
-    return ZE_RESULT_SUCCESS;
-}
 ze_result_t eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventCreateEpilogue(ze_event_pool_handle_t hEventPool, const ze_event_desc_t *desc, ze_event_handle_t *phEvent) {
 
     eventToDagID[*phEvent] = invalidDagID;
-
-    return ZE_RESULT_SUCCESS;
-}
-
-ze_result_t
-eventsDeadlockChecker::ZEeventsDeadlockChecker::zeEventDestroyPrologue(
-    ze_event_handle_t hEvent ///< [in][release] handle of event object to destroy
-) {
 
     return ZE_RESULT_SUCCESS;
 }
@@ -89,22 +70,6 @@ eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyPro
 ) {
 
     checkForDeadlock("zeCommandListAppendMemoryCopy", hSignalEvent, numWaitEvents, phWaitEvents);
-
-    return ZE_RESULT_SUCCESS;
-}
-
-ze_result_t
-eventsDeadlockChecker::ZEeventsDeadlockChecker::zeCommandListAppendMemoryCopyEpilogue(
-    ze_command_list_handle_t hCommandList, ///< [in] handle of command list
-    void *dstptr,                          ///< [in] pointer to destination memory to copy to
-    const void *srcptr,                    ///< [in] pointer to source memory to copy from
-    size_t size,                           ///< [in] size in bytes to copy
-    ze_event_handle_t hSignalEvent,        ///< [in][optional] handle of the event to signal on completion
-    uint32_t numWaitEvents,                ///< [in][optional] number of events to wait on before launching; must be 0
-                                           ///< if `nullptr == phWaitEvents`
-    ze_event_handle_t *phWaitEvents        ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
-                                           ///< on before launching
-) {
 
     return ZE_RESULT_SUCCESS;
 }
