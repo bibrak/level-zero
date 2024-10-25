@@ -17,9 +17,11 @@ eventsDeadlockChecker::eventsDeadlockChecker() {
     enableEventsDeadlock = getenv_tobool("ZEL_ENABLE_EVENTSDEADLOCK_CHECKER");
     if (enableEventsDeadlock) {
         eventsDeadlockChecker::ZEeventsDeadlockChecker *zeChecker = new eventsDeadlockChecker::ZEeventsDeadlockChecker;
+        eventsDeadlockChecker::ZESeventsDeadlockChecker *zesChecker = new eventsDeadlockChecker::ZESeventsDeadlockChecker;
+        eventsDeadlockChecker::ZETeventsDeadlockChecker *zetChecker = new eventsDeadlockChecker::ZETeventsDeadlockChecker;
         eventsDeadlock_checker.zeValidation = zeChecker;
-        eventsDeadlock_checker.zesValidation = nullptr;
-        eventsDeadlock_checker.zetValidation = nullptr;
+        eventsDeadlock_checker.zesValidation = zesChecker;
+        eventsDeadlock_checker.zetValidation = zetChecker;
 
         validation_layer::context.validationHandlers.push_back(&eventsDeadlock_checker);
     }
