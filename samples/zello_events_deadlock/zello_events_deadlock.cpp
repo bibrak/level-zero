@@ -5,12 +5,12 @@
  * SPDX-License-Identifier: MIT
  *
  */
-#include <stdlib.h>
-#include <memory>
-
 #include "zello_init.h"
 
-void print_loader_versions(){
+#include <memory>
+#include <stdlib.h>
+
+void print_loader_versions() {
 
     zel_component_version_t *versions;
     size_t size = 0;
@@ -19,7 +19,7 @@ void print_loader_versions(){
     versions = new zel_component_version_t[size];
     zelLoaderGetVersions(&size, versions);
 
-    for(size_t i = 0; i < size; i++){
+    for (size_t i = 0; i < size; i++) {
         std::cout << "Version " << i << std::endl;
         std::cout << "Name: " << versions[i].component_name << std::endl;
         std::cout << "Major: " << versions[i].component_lib_version.major << std::endl;
@@ -31,34 +31,28 @@ void print_loader_versions(){
 }
 
 #if defined(_WIN32)
-    #define putenv_safe _putenv
+#define putenv_safe _putenv
 #else
-    #define putenv_safe putenv
+#define putenv_safe putenv
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-int main( int argc, char *argv[] )
-{
+int main(int argc, char *argv[]) {
     bool tracing_runtime_enabled = false;
-    if( argparse( argc, argv, "-null", "--enable_null_driver" ) )
-    {
-        putenv_safe( const_cast<char *>( "ZE_ENABLE_NULL_DRIVER=1" ) );
+    if (argparse(argc, argv, "-null", "--enable_null_driver")) {
+        putenv_safe(const_cast<char *>("ZE_ENABLE_NULL_DRIVER=1"));
     }
-    if( argparse( argc, argv, "-ldr", "--force_loader_intercepts" ) )
-    {
-        putenv_safe( const_cast<char *>( "ZE_ENABLE_LOADER_INTERCEPT=1" ) );
+    if (argparse(argc, argv, "-ldr", "--force_loader_intercepts")) {
+        putenv_safe(const_cast<char *>("ZE_ENABLE_LOADER_INTERCEPT=1"));
     }
-    if( argparse( argc, argv, "-val", "--enable_validation_layer" ) )
-    {
-        putenv_safe( const_cast<char *>( "ZE_ENABLE_VALIDATION_LAYER=1" ) );
-        putenv_safe( const_cast<char *>( "ZE_ENABLE_PARAMETER_VALIDATION=1" ) );
+    if (argparse(argc, argv, "-val", "--enable_validation_layer")) {
+        putenv_safe(const_cast<char *>("ZE_ENABLE_VALIDATION_LAYER=1"));
+        putenv_safe(const_cast<char *>("ZE_ENABLE_PARAMETER_VALIDATION=1"));
     }
-    if( argparse( argc, argv, "-trace", "--enable_tracing_layer" ) )
-    {
-        putenv_safe( const_cast<char *>( "ZE_ENABLE_TRACING_LAYER=1" ) );
+    if (argparse(argc, argv, "-trace", "--enable_tracing_layer")) {
+        putenv_safe(const_cast<char *>("ZE_ENABLE_TRACING_LAYER=1"));
     }
-    if( argparse( argc, argv, "-tracerun", "--enable_tracing_layer_runtime" ) )
-    {
+    if (argparse(argc, argv, "-tracerun", "--enable_tracing_layer_runtime")) {
         tracing_runtime_enabled = true;
     }
 
@@ -67,15 +61,14 @@ int main( int argc, char *argv[] )
 
     ze_driver_handle_t pDriver = nullptr;
     ze_device_handle_t pDevice = nullptr;
-    if( init_ze() )
-    {
+    if (init_ze()) {
 
         print_loader_versions();
 
         if (tracing_runtime_enabled) {
             std::cout << "Enabling Tracing Layer after init" << std::endl;
             status = zelEnableTracingLayer();
-            if(status != ZE_RESULT_SUCCESS) {
+            if (status != ZE_RESULT_SUCCESS) {
                 std::cout << "zelEnableTracingLayer Failed with return code: " << to_string(status) << std::endl;
                 exit(1);
             }
@@ -83,42 +76,38 @@ int main( int argc, char *argv[] )
 
         uint32_t driverCount = 0;
         status = zeDriverGet(&driverCount, nullptr);
-        if(status != ZE_RESULT_SUCCESS) {
+        if (status != ZE_RESULT_SUCCESS) {
             std::cout << "zeDriverGet Failed with return code: " << to_string(status) << std::endl;
             exit(1);
         }
 
-        std::vector<ze_driver_handle_t> drivers( driverCount );
-        status = zeDriverGet( &driverCount, drivers.data() );
-        if(status != ZE_RESULT_SUCCESS) {
+        std::vector<ze_driver_handle_t> drivers(driverCount);
+        status = zeDriverGet(&driverCount, drivers.data());
+        if (status != ZE_RESULT_SUCCESS) {
             std::cout << "zeDriverGet Failed with return code: " << to_string(status) << std::endl;
             exit(1);
         }
 
-        for( uint32_t driver = 0; driver < driverCount; ++driver )
-        {
+        for (uint32_t driver = 0; driver < driverCount; ++driver) {
             pDriver = drivers[driver];
-            pDevice = findDevice( pDriver, type );
-            if( pDevice )
-            {
+            pDevice = findDevice(pDriver, type);
+            if (pDevice) {
                 break;
             }
         }
     }
 
-    if( !pDevice )
-    {
-        std::cout << "Did NOT find matching " << to_string(type) <<" device!" << "\n";
+    if (!pDevice) {
+        std::cout << "Did NOT find matching " << to_string(type) << " device!" << "\n";
         return -1;
     }
-
 
     // Create the context
     ze_context_handle_t context;
     ze_context_desc_t context_desc = {};
     context_desc.stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC;
     status = zeContextCreate(pDriver, &context_desc, &context);
-    if(status != ZE_RESULT_SUCCESS) {
+    if (status != ZE_RESULT_SUCCESS) {
         std::cout << "zeContextCreate Failed with return code: " << to_string(status) << std::endl;
         exit(1);
     }
@@ -128,7 +117,7 @@ int main( int argc, char *argv[] )
     altdesc.stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC;
     ze_command_list_handle_t command_list = {};
     status = zeCommandListCreateImmediate(context, pDevice, &altdesc, &command_list);
-    if(status != ZE_RESULT_SUCCESS) {
+    if (status != ZE_RESULT_SUCCESS) {
         std::cout << "zeCommandListCreateImmediate Failed with return code: " << to_string(status) << std::endl;
         exit(1);
     }
@@ -142,35 +131,36 @@ int main( int argc, char *argv[] )
     ev_desc.stype = ZE_STRUCTURE_TYPE_EVENT_DESC;
     ev_desc.signal = ZE_EVENT_SCOPE_FLAG_HOST;
     ev_desc.wait = ZE_EVENT_SCOPE_FLAG_HOST;
-    ze_event_handle_t event;
-    ze_event_pool_handle_t event_pool;
 
+    ze_event_pool_handle_t event_pool;
     status = zeEventPoolCreate(context, &ep_desc, 1, &pDevice, &event_pool);
-    if(status != ZE_RESULT_SUCCESS) {
+    if (status != ZE_RESULT_SUCCESS) {
         std::cout << "zeEventPoolCreate Failed with return code: " << to_string(status) << std::endl;
         exit(1);
     }
 
-    status = zeEventCreate(event_pool, &ev_desc, &event);
-    if(status != ZE_RESULT_SUCCESS) {
+    std::vector<ze_event_handle_t> event{};
+    // ze_event_handle_t event;
+    status = zeEventCreate(event_pool, &ev_desc, &event[0]);
+    if (status != ZE_RESULT_SUCCESS) {
         std::cout << "zeEventCreate Failed with return code: " << to_string(status) << std::endl;
         exit(1);
     }
 
     // signal the event from the device and wait for completion
-    zeCommandListAppendSignalEvent(command_list, event);
-    zeEventHostSynchronize(event, UINT64_MAX );
+    zeCommandListAppendSignalEvent(command_list, event[0]);
+    zeEventHostSynchronize(event[0], UINT64_MAX);
     std::cout << "Congratulations, the device completed execution!\n";
 
     zeContextDestroy(context);
     zeCommandListDestroy(command_list);
-    zeEventDestroy(event);
+    zeEventDestroy(event[0]);
     zeEventPoolDestroy(event_pool);
 
     if (tracing_runtime_enabled) {
         std::cout << "Disable Tracing Layer after init" << std::endl;
         status = zelDisableTracingLayer();
-        if(status != ZE_RESULT_SUCCESS) {
+        if (status != ZE_RESULT_SUCCESS) {
             std::cout << "zelDisableTracingLayer Failed with return code: " << to_string(status) << std::endl;
             exit(1);
         }
